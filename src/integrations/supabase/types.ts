@@ -181,7 +181,6 @@ export type Database = {
           corretor_id: string
           created_at: string
           creci: string | null
-          data_admissao: string | null
           data_nascimento: string | null
           disc_conformidade: number | null
           disc_dominancia: number | null
@@ -197,7 +196,6 @@ export type Database = {
           corretor_id: string
           created_at?: string
           creci?: string | null
-          data_admissao?: string | null
           data_nascimento?: string | null
           disc_conformidade?: number | null
           disc_dominancia?: number | null
@@ -213,7 +211,6 @@ export type Database = {
           corretor_id?: string
           created_at?: string
           creci?: string | null
-          data_admissao?: string | null
           data_nascimento?: string | null
           disc_conformidade?: number | null
           disc_dominancia?: number | null
