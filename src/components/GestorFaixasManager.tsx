@@ -38,6 +38,8 @@ export default function GestorFaixasManager() {
         <CardTitle>Faixas de comissão do gestor</CardTitle>
         <CardDescription>
           Percentual aplicado sobre a comissão bruta gerada pela equipe no mês, conforme o faturamento da equipe.
+          Vendas feitas pelo próprio gestor não entram nesta conta: nelas o gestor recebe o split dele (ex.: 50%) e o
+          restante fica com a Voluire.
         </CardDescription>
       </CardHeader>
       <CardContent className="p-0">
