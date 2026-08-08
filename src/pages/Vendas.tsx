@@ -360,7 +360,15 @@ export default function Vendas() {
               </div>
               <div className="space-y-2">
                 <Label>Forma de pagamento</Label>
-                <Select value={form.forma_pagamento} onValueChange={(v) => set("forma_pagamento", v)}>
+                <Select
+                  value={form.forma_pagamento}
+                  onValueChange={(v) => {
+                    set("forma_pagamento", v);
+                    if (v === "a_vista") setParcelasEdit([]);
+                    else if (parcelasEdit.length === 0)
+                      setParcelasEdit(gerarParcelas(Number(form.qtd_parcelas) || 1, form.primeira_parcela, Number(form.valor)));
+                  }}
+                >
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {Object.entries(FORMA_PAGAMENTO_LABELS).map(([k, l]) => <SelectItem key={k} value={k}>{l}</SelectItem>)}
@@ -387,6 +395,71 @@ export default function Vendas() {
                   <div className="space-y-2">
                     <Label>1ª parcela prevista</Label>
                     <Input type="date" value={form.primeira_parcela} onChange={(e) => set("primeira_parcela", e.target.value)} />
+                  </div>
+                  <div className="space-y-3 sm:col-span-2 rounded-md border p-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div>
+                        <Label>Cronograma de parcelas</Label>
+                        <p className="text-xs text-muted-foreground">
+                          Pré-definido, mas totalmente editável: altere valor e data de cada parcela.
+                        </p>
+                      </div>
+                      <Button type="button" variant="outline" size="sm" onClick={regenerar}>
+                        Gerar {form.qtd_parcelas}x automático
+                      </Button>
+                    </div>
+
+                    <div className="space-y-2">
+                      {parcelasEdit.map((p, i) => (
+                        <div key={i} className="flex items-center gap-2">
+                          <span className="w-8 text-sm text-muted-foreground">{i + 1}º</span>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            value={p.valor}
+                            onChange={(e) => setParcela(i, "valor", e.target.value)}
+                            placeholder="Valor"
+                          />
+                          <Input
+                            type="date"
+                            value={p.data_prevista}
+                            onChange={(e) => setParcela(i, "data_prevista", e.target.value)}
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setParcelasEdit((arr) => arr.filter((_, idx) => idx !== i))}
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </div>
+                      ))}
+                      {parcelasEdit.length === 0 && (
+                        <p className="text-sm text-muted-foreground">Nenhuma parcela — gere ou adicione manualmente.</p>
+                      )}
+                    </div>
+
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() =>
+                          setParcelasEdit((arr) => {
+                            const last = arr[arr.length - 1];
+                            const d = last ? new Date(last.data_prevista + "T12:00:00") : new Date();
+                            if (last) d.setMonth(d.getMonth() + 1);
+                            return [...arr, { valor: "0", data_prevista: d.toISOString().split("T")[0] }];
+                          })
+                        }
+                      >
+                        <Plus className="mr-1 h-4 w-4" />Adicionar parcela
+                      </Button>
+                      <span className={`text-sm ${Math.abs(totalParcelas - (Number(form.valor) || 0)) < 0.05 ? "text-muted-foreground" : "text-destructive"}`}>
+                        Soma: {formatCurrency(totalParcelas)} de {formatCurrency(Number(form.valor) || 0)}
+                      </span>
+                    </div>
                   </div>
                 </>
               )}
