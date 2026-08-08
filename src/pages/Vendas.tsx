@@ -250,9 +250,15 @@ export default function Vendas() {
     onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
   });
 
-  function abrirEdicao(v: any) {
+  async function abrirEdicao(v: any) {
     const parts = v.venda_corretores ?? [];
     setEditId(v.id);
+    const { data: ps } = await supabase
+      .from("venda_parcelas")
+      .select("valor, data_prevista")
+      .eq("venda_id", v.id)
+      .order("numero");
+    setParcelasEdit((ps ?? []).map((p: any) => ({ valor: String(p.valor), data_prevista: p.data_prevista })));
     setForm({
       numero_contrato: v.numero_contrato ?? "",
       cliente_nome: v.cliente_nome ?? "",
@@ -270,8 +276,8 @@ export default function Vendas() {
       corretor1_part: String(parts[0]?.participacao_percentual ?? 100),
       corretor2_id: parts[1]?.corretor_id ?? NONE,
       corretor2_part: String(parts[1]?.participacao_percentual ?? 0),
-      qtd_parcelas: "1",
-      primeira_parcela: v.data_venda ?? new Date().toISOString().split("T")[0],
+      qtd_parcelas: String((ps ?? []).length || 1),
+      primeira_parcela: (ps ?? [])[0]?.data_prevista ?? v.data_venda ?? new Date().toISOString().split("T")[0],
     });
     setOpen(true);
   }
