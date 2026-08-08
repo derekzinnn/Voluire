@@ -26,13 +26,8 @@ export default function DesempenhoTab({ corretorId }: { corretorId: string }) {
   const { data: vendas = [] } = useQuery({
     queryKey: ["desempenho-vendas", corretorId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("vendas")
-        .select("id, valor, data_venda, status")
-        .eq("corretor_id", corretorId)
-        .neq("status", "distrato");
-      if (error) throw error;
-      return data ?? [];
+      const rows = await fetchVendasPorCorretor([corretorId]);
+      return rows.filter((v) => v.status !== "distrato");
     },
   });
 
