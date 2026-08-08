@@ -355,8 +355,8 @@ export default function Vendas() {
                 <Input type="number" step="0.01" value={form.valor} onChange={(e) => set("valor", e.target.value)} />
               </div>
               <div className="space-y-2">
-                <Label>Comissão bruta (%)</Label>
-                <Input type="number" step="0.01" value={form.comissao_percentual_bruta} onChange={(e) => set("comissao_percentual_bruta", e.target.value)} />
+                <Label>Comissão bruta (6% fixo)</Label>
+                <Input value={brl((Number(form.valor) || 0) * 0.06)} readOnly disabled />
               </div>
               <div className="space-y-2">
                 <Label>Forma de pagamento</Label>
