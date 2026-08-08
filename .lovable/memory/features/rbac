@@ -1,0 +1,28 @@
+---
+name: RBAC - Controle de Acesso por Role
+description: Permissões de acesso por role (diretor, gerente, corretor) no CRM
+type: feature
+---
+
+## Roles
+- **diretor**: acesso total (Andressa, Caroline)
+- **gerente**: acesso total por enquanto, futuro: filtrado por equipe
+- **corretor**: acesso restrito aos próprios dados
+
+## Permissões do Corretor
+- ✅ Dashboard (dados próprios via RLS)
+- ✅ Vendas (só as próprias)
+- ✅ Comissões (só as próprias)
+- ✅ Metas (só as próprias)
+- ✅ Placar Voluire (ranking completo visível)
+- ❌ Financeiro
+- ❌ Marketing
+- ❌ Corretores (não vê lista, só próprio registro)
+
+## Implementação
+- Enum `app_role`: 'diretor', 'gerente', 'corretor' (+ legados 'admin', 'financeiro')
+- Trigger `on_auth_user_created_assign_role`: atribui 'corretor' automaticamente
+- Funções: `get_my_corretor_id()`, `is_diretor_or_gerente()`, `has_role()`
+- RLS filtra dados por corretor_id vinculado ao user_id
+- UI: `useUserRole` hook + `canAccessPage()` helper
+- Menu lateral filtra itens por role

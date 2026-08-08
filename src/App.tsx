@@ -1,0 +1,78 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
+import { Toaster as Sonner } from "@/components/ui/sonner";
+import { Toaster } from "@/components/ui/toaster";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { useAuth } from "@/hooks/useAuth";
+import AppLayout from "@/components/AppLayout";
+import Auth from "@/pages/Auth";
+import ResetPassword from "@/pages/ResetPassword";
+import Dashboard from "@/pages/Dashboard";
+import Vendas from "@/pages/Vendas";
+import Corretores from "@/pages/Corretores";
+import CorretorDetalhe from "@/pages/CorretorDetalhe";
+import Comissoes from "@/pages/Comissoes";
+import Financeiro from "@/pages/Financeiro";
+import Metas from "@/pages/Metas";
+import Marketing from "@/pages/Marketing";
+import PlacarVoluire from "@/pages/PlacarVoluire";
+import GestaoUsuarios from "@/pages/GestaoUsuarios";
+import MinhaEquipe from "@/pages/MinhaEquipe";
+import NotFound from "@/pages/NotFound";
+
+const queryClient = new QueryClient();
+
+function AppRoutes() {
+  const { session, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    );
+  }
+
+  if (!session) {
+    return (
+      <Routes>
+        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="*" element={<Auth />} />
+      </Routes>
+    );
+  }
+
+  return (
+    <AppLayout>
+      <Routes>
+        <Route path="/" element={<Dashboard />} />
+        <Route path="/vendas" element={<Vendas />} />
+        <Route path="/corretores" element={<Corretores />} />
+        <Route path="/corretores/:id" element={<CorretorDetalhe />} />
+        <Route path="/comissoes" element={<Comissoes />} />
+        <Route path="/financeiro" element={<Financeiro />} />
+        <Route path="/metas" element={<Metas />} />
+        <Route path="/marketing" element={<Marketing />} />
+        <Route path="/placar-voluire" element={<PlacarVoluire />} />
+        <Route path="/minha-equipe" element={<MinhaEquipe />} />
+        <Route path="/gestao-usuarios" element={<GestaoUsuarios />} />
+
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </AppLayout>
+  );
+}
+
+const App = () => (
+  <QueryClientProvider client={queryClient}>
+    <TooltipProvider>
+      <Toaster />
+      <Sonner />
+      <BrowserRouter>
+        <AppRoutes />
+      </BrowserRouter>
+    </TooltipProvider>
+  </QueryClientProvider>
+);
+
+export default App;
