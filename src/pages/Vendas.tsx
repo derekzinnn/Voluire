@@ -356,7 +356,7 @@ export default function Vendas() {
               </div>
               <div className="space-y-2">
                 <Label>Comissão bruta (6% fixo)</Label>
-                <Input value={brl((Number(form.valor) || 0) * 0.06)} readOnly disabled />
+                <Input value={formatCurrency((Number(form.valor) || 0) * 0.06)} readOnly disabled />
               </div>
               <div className="space-y-2">
                 <Label>Forma de pagamento</Label>
