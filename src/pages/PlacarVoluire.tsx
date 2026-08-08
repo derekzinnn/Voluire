@@ -90,8 +90,8 @@ export default function PlacarVoluire() {
   const { data: vendas = [] } = useQuery({
     queryKey: ["vendas"],
     queryFn: async () => {
-      const { data } = await supabase.from("vendas").select("valor, data_venda, corretor_id, status").neq("status", "distrato");
-      return data || [];
+      const rows = await fetchVendasPorCorretor();
+      return rows.filter((v) => v.status !== "distrato");
     },
   });
 
