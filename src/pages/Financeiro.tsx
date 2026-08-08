@@ -32,7 +32,9 @@ export default function Financeiro() {
   const { data: comissoes = [] } = useQuery({
     queryKey: ["comissoes-financeiro"],
     queryFn: async () => {
-      const { data } = await supabase.from("comissoes").select("valor_empresa, status, data_recebimento, vendas(data_venda, status)");
+      const { data } = await supabase
+        .from("comissoes")
+        .select("valor_total, valor_corretores, valor_empresa, percentual_total, status, data_recebimento, vendas(id, numero_contrato, cliente_nome, unidade, valor, data_venda, status, forma_pagamento)");
       return data || [];
     },
   });
