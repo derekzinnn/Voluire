@@ -7,7 +7,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import { formatCurrency, formatDate, formatPercent } from "@/lib/format";
 import { useToast } from "@/hooks/use-toast";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -317,10 +316,6 @@ export default function Comissoes() {
           </TabsContent>
         )}
       </Tabs>
-      {isDiretor && <div className="hidden" aria-hidden />}
-      <div className="hidden">
-        <Input aria-hidden />
-      </div>
     </div>
   );
 }
