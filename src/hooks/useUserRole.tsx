@@ -79,6 +79,9 @@ export function canAccessPage(role: AppRole | null, page: string): boolean {
   // Gestão de usuários: somente diretores
   if (page === "/gestao-usuarios") return role === "diretor";
 
+  // Parceiros: diretor e gerente
+  if (page === "/parceiros") return role === "diretor" || role === "gerente";
+
   // Área de gestão de pessoas: diretor e gerente
   if (page === "/minha-equipe") return role === "diretor" || role === "gerente";
 
