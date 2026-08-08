@@ -3,17 +3,11 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchVendasPorCorretor } from "@/lib/vendas";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/format";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 const ANO = new Date().getFullYear();
 const TRIMESTRE_ATUAL = Math.floor(new Date().getMonth() / 3) + 1;
-
-const META_PONTOS = 120;
-const META_VGV = 900000;
-const META_CAPTACOES = 15;
 
 function trimestreDe(dataISO: string) {
   return Math.floor(new Date(dataISO + "T12:00:00").getMonth() / 3) + 1;
@@ -28,32 +22,6 @@ export default function DesempenhoTab({ corretorId }: { corretorId: string }) {
     queryFn: async () => {
       const rows = await fetchVendasPorCorretor([corretorId]);
       return rows.filter((v) => v.status !== "distrato");
-    },
-  });
-
-  const { data: metas = [] } = useQuery({
-    queryKey: ["desempenho-metas", corretorId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("metas")
-        .select("id, tipo, categoria, valor, ano, mes, trimestre")
-        .eq("corretor_id", corretorId)
-        .eq("ano", ANO);
-      if (error) throw error;
-      return data ?? [];
-    },
-  });
-
-  const { data: entregas = [] } = useQuery({
-    queryKey: ["desempenho-entregas", corretorId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("placar_entregas")
-        .select("id, trimestre, ano, placar_tarefas(pontos)")
-        .eq("corretor_id", corretorId)
-        .eq("ano", ANO);
-      if (error) throw error;
-      return data ?? [];
     },
   });
 
@@ -82,39 +50,17 @@ export default function DesempenhoTab({ corretorId }: { corretorId: string }) {
           numero: t,
           vgv: vs.reduce((s, v) => s + Number(v.valor), 0),
           vendas: vs.length,
-          pontos: entregas
-            .filter((e) => e.trimestre === t)
-            .reduce((s, e: any) => s + (e.placar_tarefas?.pontos ?? 0), 0),
         };
       }),
-    [vendasAno, entregas]
+    [vendasAno]
   );
 
   const triAtual = porTrimestre[TRIMESTRE_ATUAL - 1];
   const semCaptacoes = captacoes.length === 0;
 
-  const metasComRealizado = useMemo(
-    () =>
-      metas.map((m) => {
-        const alvoVendas = vendasAno.filter((v) => {
-          const d = new Date(v.data_venda + "T12:00:00");
-          if (m.mes) return d.getMonth() + 1 === m.mes;
-          if (m.trimestre) return trimestreDe(v.data_venda) === m.trimestre;
-          return true;
-        });
-        const realizado =
-          m.categoria === "vendas"
-            ? alvoVendas.length
-            : alvoVendas.reduce((s, v) => s + Number(v.valor), 0);
-        const pct = Number(m.valor) > 0 ? Math.min(100, (realizado / Number(m.valor)) * 100) : 0;
-        return { ...m, realizado, pct };
-      }),
-    [metas, vendasAno]
-  );
-
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">VGV do ano</CardTitle>
@@ -131,15 +77,6 @@ export default function DesempenhoTab({ corretorId }: { corretorId: string }) {
           <CardContent>
             <p className="text-2xl font-bold">{formatCurrency(triAtual?.vgv ?? 0)}</p>
             <p className="text-xs text-muted-foreground">{TRIMESTRE_ATUAL}º trimestre de {ANO}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Pontos no Placar</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">{triAtual?.pontos ?? 0}</p>
-            <p className="text-xs text-muted-foreground">no trimestre atual</p>
           </CardContent>
         </Card>
         <Card>
