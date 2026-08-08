@@ -73,7 +73,29 @@ export default function Vendas() {
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm());
   const [parcelasVenda, setParcelasVenda] = useState<any | null>(null);
+  const [parcelasEdit, setParcelasEdit] = useState<{ valor: string; data_prevista: string }[]>([]);
   const set = (k: keyof FormState, v: string) => setForm((f) => ({ ...f, [k]: v }));
+
+  function gerarParcelas(qtd: number, primeira: string, valorTotal: number) {
+    const n = Math.max(1, qtd || 1);
+    const base = new Date((primeira || new Date().toISOString().split("T")[0]) + "T12:00:00");
+    const bruto = Math.round(((valorTotal || 0) / n) * 100) / 100;
+    return Array.from({ length: n }, (_, i) => {
+      const d = new Date(base);
+      d.setMonth(d.getMonth() + i);
+      // última parcela absorve a diferença de centavos
+      const valor = i === n - 1 ? Math.round(((valorTotal || 0) - bruto * (n - 1)) * 100) / 100 : bruto;
+      return { valor: String(valor), data_prevista: d.toISOString().split("T")[0] };
+    });
+  }
+
+  const regenerar = () =>
+    setParcelasEdit(gerarParcelas(Number(form.qtd_parcelas), form.primeira_parcela, Number(form.valor)));
+
+  const setParcela = (i: number, k: "valor" | "data_prevista", v: string) =>
+    setParcelasEdit((arr) => arr.map((p, idx) => (idx === i ? { ...p, [k]: v } : p)));
+
+  const totalParcelas = parcelasEdit.reduce((s, p) => s + (Number(p.valor) || 0), 0);
 
   const { data: vendas = [] } = useQuery({
     queryKey: ["vendas"],
@@ -172,21 +194,21 @@ export default function Vendas() {
 
       // Parcelas: recriadas conforme a forma de pagamento
       await supabase.from("venda_parcelas").delete().eq("venda_id", vendaId!);
-      const qtd = form.forma_pagamento === "a_vista" ? 1 : Math.max(1, Number(form.qtd_parcelas) || 1);
-      const valorParcela = Number(form.valor) / qtd;
-      const base = new Date(form.primeira_parcela + "T12:00:00");
-      const parcelasRows = Array.from({ length: qtd }, (_, i) => {
-        const d = new Date(base);
-        d.setMonth(d.getMonth() + i);
-        return {
-          venda_id: vendaId!,
-          numero: i + 1,
-          valor: valorParcela,
-          data_prevista: d.toISOString().split("T")[0],
-          tipo: form.forma_pagamento,
-          status: "prevista",
-        };
-      });
+      const cronograma =
+        form.forma_pagamento === "a_vista"
+          ? [{ valor: form.valor, data_prevista: form.primeira_parcela }]
+          : parcelasEdit.length > 0
+            ? parcelasEdit
+            : gerarParcelas(Number(form.qtd_parcelas), form.primeira_parcela, Number(form.valor));
+      if (cronograma.some((p) => !p.data_prevista)) throw new Error("Informe a data prevista de todas as parcelas.");
+      const parcelasRows = cronograma.map((p, i) => ({
+        venda_id: vendaId!,
+        numero: i + 1,
+        valor: Number(p.valor) || 0,
+        data_prevista: p.data_prevista,
+        tipo: form.forma_pagamento,
+        status: "prevista",
+      }));
       const { error: pErr } = await supabase.from("venda_parcelas").insert(parcelasRows);
       if (pErr) throw pErr;
     },
@@ -197,6 +219,7 @@ export default function Vendas() {
       setOpen(false);
       setEditId(null);
       setForm(emptyForm());
+      setParcelasEdit([]);
     },
     onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
   });
@@ -227,9 +250,15 @@ export default function Vendas() {
     onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
   });
 
-  function abrirEdicao(v: any) {
+  async function abrirEdicao(v: any) {
     const parts = v.venda_corretores ?? [];
     setEditId(v.id);
+    const { data: ps } = await supabase
+      .from("venda_parcelas")
+      .select("valor, data_prevista")
+      .eq("venda_id", v.id)
+      .order("numero");
+    setParcelasEdit((ps ?? []).map((p: any) => ({ valor: String(p.valor), data_prevista: p.data_prevista })));
     setForm({
       numero_contrato: v.numero_contrato ?? "",
       cliente_nome: v.cliente_nome ?? "",
@@ -247,8 +276,8 @@ export default function Vendas() {
       corretor1_part: String(parts[0]?.participacao_percentual ?? 100),
       corretor2_id: parts[1]?.corretor_id ?? NONE,
       corretor2_part: String(parts[1]?.participacao_percentual ?? 0),
-      qtd_parcelas: "1",
-      primeira_parcela: v.data_venda ?? new Date().toISOString().split("T")[0],
+      qtd_parcelas: String((ps ?? []).length || 1),
+      primeira_parcela: (ps ?? [])[0]?.data_prevista ?? v.data_venda ?? new Date().toISOString().split("T")[0],
     });
     setOpen(true);
   }
@@ -278,7 +307,7 @@ export default function Vendas() {
       </div>
 
       {isGestor && (
-        <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) { setEditId(null); setForm(emptyForm()); } }}>
+        <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) { setEditId(null); setForm(emptyForm()); setParcelasEdit([]); } }}>
           <DialogTrigger asChild>
             <Button><Plus className="mr-2 h-4 w-4" />Novo contrato</Button>
           </DialogTrigger>
@@ -331,7 +360,15 @@ export default function Vendas() {
               </div>
               <div className="space-y-2">
                 <Label>Forma de pagamento</Label>
-                <Select value={form.forma_pagamento} onValueChange={(v) => set("forma_pagamento", v)}>
+                <Select
+                  value={form.forma_pagamento}
+                  onValueChange={(v) => {
+                    set("forma_pagamento", v);
+                    if (v === "a_vista") setParcelasEdit([]);
+                    else if (parcelasEdit.length === 0)
+                      setParcelasEdit(gerarParcelas(Number(form.qtd_parcelas) || 1, form.primeira_parcela, Number(form.valor)));
+                  }}
+                >
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {Object.entries(FORMA_PAGAMENTO_LABELS).map(([k, l]) => <SelectItem key={k} value={k}>{l}</SelectItem>)}
@@ -358,6 +395,71 @@ export default function Vendas() {
                   <div className="space-y-2">
                     <Label>1ª parcela prevista</Label>
                     <Input type="date" value={form.primeira_parcela} onChange={(e) => set("primeira_parcela", e.target.value)} />
+                  </div>
+                  <div className="space-y-3 sm:col-span-2 rounded-md border p-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div>
+                        <Label>Cronograma de parcelas</Label>
+                        <p className="text-xs text-muted-foreground">
+                          Pré-definido, mas totalmente editável: altere valor e data de cada parcela.
+                        </p>
+                      </div>
+                      <Button type="button" variant="outline" size="sm" onClick={regenerar}>
+                        Gerar {form.qtd_parcelas}x automático
+                      </Button>
+                    </div>
+
+                    <div className="space-y-2">
+                      {parcelasEdit.map((p, i) => (
+                        <div key={i} className="flex items-center gap-2">
+                          <span className="w-8 text-sm text-muted-foreground">{i + 1}º</span>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            value={p.valor}
+                            onChange={(e) => setParcela(i, "valor", e.target.value)}
+                            placeholder="Valor"
+                          />
+                          <Input
+                            type="date"
+                            value={p.data_prevista}
+                            onChange={(e) => setParcela(i, "data_prevista", e.target.value)}
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setParcelasEdit((arr) => arr.filter((_, idx) => idx !== i))}
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </div>
+                      ))}
+                      {parcelasEdit.length === 0 && (
+                        <p className="text-sm text-muted-foreground">Nenhuma parcela — gere ou adicione manualmente.</p>
+                      )}
+                    </div>
+
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() =>
+                          setParcelasEdit((arr) => {
+                            const last = arr[arr.length - 1];
+                            const d = last ? new Date(last.data_prevista + "T12:00:00") : new Date();
+                            if (last) d.setMonth(d.getMonth() + 1);
+                            return [...arr, { valor: "0", data_prevista: d.toISOString().split("T")[0] }];
+                          })
+                        }
+                      >
+                        <Plus className="mr-1 h-4 w-4" />Adicionar parcela
+                      </Button>
+                      <span className={`text-sm ${Math.abs(totalParcelas - (Number(form.valor) || 0)) < 0.05 ? "text-muted-foreground" : "text-destructive"}`}>
+                        Soma: {formatCurrency(totalParcelas)} de {formatCurrency(Number(form.valor) || 0)}
+                      </span>
+                    </div>
                   </div>
                 </>
               )}
