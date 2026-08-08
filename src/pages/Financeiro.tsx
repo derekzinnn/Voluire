@@ -11,12 +11,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { formatCurrency, MESES, parseLocalDate } from "@/lib/format";
+import { FORMA_PAGAMENTO_LABELS } from "@/lib/vendas";
 import { Plus, Trash2, TrendingUp, TrendingDown, Wallet } from "lucide-react";
 import { Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Line, ComposedChart } from "recharts";
 
 export default function Financeiro() {
   const [open, setOpen] = useState(false);
   const [filtroMes, setFiltroMes] = useState<string>((new Date().getMonth() + 1).toString());
+  const [mesGerencial, setMesGerencial] = useState<string>((new Date().getMonth() + 1).toString());
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const currentYear = new Date().getFullYear();
@@ -32,7 +34,9 @@ export default function Financeiro() {
   const { data: comissoes = [] } = useQuery({
     queryKey: ["comissoes-financeiro"],
     queryFn: async () => {
-      const { data } = await supabase.from("comissoes").select("valor_empresa, status, data_recebimento, vendas(data_venda, status)");
+      const { data } = await supabase
+        .from("comissoes")
+        .select("valor_total, valor_corretores, valor_empresa, percentual_total, status, data_recebimento, vendas(id, numero_contrato, cliente_nome, unidade, valor, data_venda, status, forma_pagamento)");
       return data || [];
     },
   });
@@ -103,16 +107,22 @@ export default function Financeiro() {
   const totalDespesasAno = fluxoMensal.reduce((s, f) => s + f.despesas, 0);
   const saldoAno = totalFaturamentoAno - totalDespesasAno;
 
-  // === Mês Gerencial (Competência): receita = comissão da empresa pela data_venda, despesa = mes lançado ===
+  // === Mês Gerencial (Competência) ===
+  // Toda venda entra INTEGRALMENTE no mês em que foi vendida, mesmo parcelada/financiada.
+  const comissoesPorMes = (i: number) =>
+    comissoes.filter(c => {
+      const venda = (c as any).vendas;
+      if (!venda || venda.status === "distrato") return false;
+      const d = parseLocalDate(venda.data_venda);
+      return d?.getMonth() === i && d.getFullYear() === currentYear;
+    });
+
   const competenciaMensal = MESES.map((mes, i) => {
-    const receita = comissoes
-      .filter(c => {
-        const venda = (c as any).vendas;
-        if (!venda || venda.status === "distrato") return false;
-        const d = parseLocalDate(venda.data_venda);
-        return d?.getMonth() === i && d.getFullYear() === currentYear;
-      })
-      .reduce((s, c) => s + Number(c.valor_empresa), 0);
+    const doMes = comissoesPorMes(i);
+    const vgv = doMes.reduce((s, c) => s + (Number((c as any).vendas?.valor) || 0), 0);
+    const comissaoBruta = doMes.reduce((s, c) => s + Number((c as any).valor_total || 0), 0);
+    const corretores = doMes.reduce((s, c) => s + Number((c as any).valor_corretores || 0), 0);
+    const receita = doMes.reduce((s, c) => s + Number(c.valor_empresa), 0);
 
     const despesasMes = despesas
       .filter(d => d.mes === i + 1)
@@ -120,6 +130,11 @@ export default function Financeiro() {
 
     return {
       mes: mes.substring(0, 3),
+      mesIndex: i,
+      qtd: doMes.length,
+      vgv,
+      comissaoBruta,
+      corretores,
       receita,
       despesas: despesasMes,
       resultado: receita - despesasMes,
@@ -133,7 +148,12 @@ export default function Financeiro() {
   });
 
   const totalReceitaCompAno = competenciaMensal.reduce((s, f) => s + f.receita, 0);
+  const totalVgvCompAno = competenciaMensal.reduce((s, f) => s + f.vgv, 0);
+  const totalComissaoBrutaAno = competenciaMensal.reduce((s, f) => s + f.comissaoBruta, 0);
+  const totalCorretoresAno = competenciaMensal.reduce((s, f) => s + f.corretores, 0);
   const resultadoCompAno = totalReceitaCompAno - totalDespesasAno;
+
+  const contratosDoMesGerencial = comissoesPorMes(Number(mesGerencial) - 1);
 
   const DespesaTable = ({ items }: { items: typeof despesas }) => (
     <Table>
@@ -271,13 +291,25 @@ export default function Financeiro() {
 
         <TabsContent value="competencia" className="space-y-6 mt-6">
           <p className="text-sm text-muted-foreground">
-            Considera <strong>tudo que aconteceu no mês</strong>: receita = comissão da empresa de todas as vendas do mês (mesmo a receber/parceladas) e despesas lançadas. Útil para medir o resultado real do mês.
+            Visão <strong>bruta</strong> do mês: toda venda entra <strong>integralmente no mês em que foi vendida</strong>, mesmo que parcelada ou financiada (ex.: R$ 2.000 em 4x = R$ 2.000 no mês da venda). Diferente do fluxo de caixa, que segue as datas de recebimento.
           </p>
 
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <Card>
+              <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">VGV bruto {currentYear}</CardTitle></CardHeader>
+              <CardContent><p className="text-2xl font-bold">{formatCurrency(totalVgvCompAno)}</p></CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Comissão bruta {currentYear}</CardTitle></CardHeader>
+              <CardContent><p className="text-2xl font-bold">{formatCurrency(totalComissaoBrutaAno)}</p></CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Repasse corretores {currentYear}</CardTitle></CardHeader>
+              <CardContent><p className="text-2xl font-bold">{formatCurrency(totalCorretoresAno)}</p></CardContent>
+            </Card>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm text-muted-foreground">Receita {currentYear}</CardTitle>
+                <CardTitle className="text-sm text-muted-foreground">Receita Voluire {currentYear}</CardTitle>
                 <TrendingUp className="h-5 w-5 text-emerald-500" />
               </CardHeader>
               <CardContent><p className="text-2xl font-bold text-emerald-600">{formatCurrency(totalReceitaCompAno)}</p></CardContent>
@@ -329,6 +361,10 @@ export default function Financeiro() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Mês</TableHead>
+                    <TableHead className="text-right">Vendas</TableHead>
+                    <TableHead className="text-right">VGV bruto</TableHead>
+                    <TableHead className="text-right">Comissão bruta</TableHead>
+                    <TableHead className="text-right">Corretores</TableHead>
                     <TableHead className="text-right">Receita</TableHead>
                     <TableHead className="text-right">Despesas</TableHead>
                     <TableHead className="text-right">Resultado do Mês</TableHead>
@@ -337,8 +373,16 @@ export default function Financeiro() {
                 </TableHeader>
                 <TableBody>
                   {competenciaComAcumulado.map(f => (
-                    <TableRow key={f.mes}>
+                    <TableRow
+                      key={f.mes}
+                      className="cursor-pointer"
+                      onClick={() => setMesGerencial((f.mesIndex + 1).toString())}
+                    >
                       <TableCell className="font-medium">{f.mes}</TableCell>
+                      <TableCell className="text-right">{f.qtd}</TableCell>
+                      <TableCell className="text-right">{formatCurrency(f.vgv)}</TableCell>
+                      <TableCell className="text-right">{formatCurrency(f.comissaoBruta)}</TableCell>
+                      <TableCell className="text-right">{formatCurrency(f.corretores)}</TableCell>
                       <TableCell className="text-right text-emerald-600">{formatCurrency(f.receita)}</TableCell>
                       <TableCell className="text-right text-destructive">{formatCurrency(f.despesas)}</TableCell>
                       <TableCell className={`text-right font-semibold ${f.resultado >= 0 ? "text-emerald-600" : "text-destructive"}`}>
@@ -351,6 +395,10 @@ export default function Financeiro() {
                   ))}
                   <TableRow className="bg-muted/50 font-bold">
                     <TableCell>Total</TableCell>
+                    <TableCell className="text-right">{competenciaMensal.reduce((s, f) => s + f.qtd, 0)}</TableCell>
+                    <TableCell className="text-right">{formatCurrency(totalVgvCompAno)}</TableCell>
+                    <TableCell className="text-right">{formatCurrency(totalComissaoBrutaAno)}</TableCell>
+                    <TableCell className="text-right">{formatCurrency(totalCorretoresAno)}</TableCell>
                     <TableCell className="text-right text-emerald-600">{formatCurrency(totalReceitaCompAno)}</TableCell>
                     <TableCell className="text-right text-destructive">{formatCurrency(totalDespesasAno)}</TableCell>
                     <TableCell className={`text-right ${resultadoCompAno >= 0 ? "text-emerald-600" : "text-destructive"}`}>
@@ -358,6 +406,49 @@ export default function Financeiro() {
                     </TableCell>
                     <TableCell></TableCell>
                   </TableRow>
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between gap-4">
+              <CardTitle>Contratos de {MESES[Number(mesGerencial) - 1]} — valor integral</CardTitle>
+              <Select value={mesGerencial} onValueChange={setMesGerencial}>
+                <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {MESES.map((m, i) => <SelectItem key={i + 1} value={(i + 1).toString()}>{m}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </CardHeader>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Contrato</TableHead>
+                    <TableHead>Cliente</TableHead>
+                    <TableHead>Pagamento</TableHead>
+                    <TableHead className="text-right">Valor da venda</TableHead>
+                    <TableHead className="text-right">Comissão bruta</TableHead>
+                    <TableHead className="text-right">Corretores</TableHead>
+                    <TableHead className="text-right">Voluire</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {contratosDoMesGerencial.map((c: any) => (
+                    <TableRow key={c.vendas.id}>
+                      <TableCell className="font-medium">{c.vendas.numero_contrato}</TableCell>
+                      <TableCell>{c.vendas.cliente_nome}</TableCell>
+                      <TableCell>{FORMA_PAGAMENTO_LABELS[c.vendas.forma_pagamento] ?? c.vendas.forma_pagamento}</TableCell>
+                      <TableCell className="text-right font-semibold">{formatCurrency(Number(c.vendas.valor))}</TableCell>
+                      <TableCell className="text-right">{formatCurrency(Number(c.valor_total))}</TableCell>
+                      <TableCell className="text-right">{formatCurrency(Number(c.valor_corretores))}</TableCell>
+                      <TableCell className="text-right text-emerald-600">{formatCurrency(Number(c.valor_empresa))}</TableCell>
+                    </TableRow>
+                  ))}
+                  {contratosDoMesGerencial.length === 0 && (
+                    <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">Nenhuma venda neste mês</TableCell></TableRow>
+                  )}
                 </TableBody>
               </Table>
             </CardContent>
