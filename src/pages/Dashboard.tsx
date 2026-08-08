@@ -211,49 +211,6 @@ export default function Dashboard() {
           </div>
         </CardContent>
       </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Detalhamento mensal — {anoSel}</CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Mês</TableHead>
-                <TableHead className="text-right">Vendas</TableHead>
-                <TableHead className="text-right">Vendas brutas</TableHead>
-                <TableHead className="text-right">Comissão bruta</TableHead>
-                <TableHead className="text-right">Corretores</TableHead>
-                <TableHead className="text-right">Gestores</TableHead>
-                <TableHead className="text-right">Voluire</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {resumo.map((r) => (
-                <TableRow key={r.mes}>
-                  <TableCell className="font-medium">{MESES[r.mes - 1]}</TableCell>
-                  <TableCell className="text-right">{r.qtd_vendas}</TableCell>
-                  <TableCell className="text-right">{formatCurrency(r.vgv)}</TableCell>
-                  <TableCell className="text-right text-muted-foreground">{formatCurrency(r.comissao_bruta)}</TableCell>
-                  <TableCell className="text-right text-emerald-600">{formatCurrency(r.corretores)}</TableCell>
-                  <TableCell className="text-right text-amber-600">{formatCurrency(r.gestores)}</TableCell>
-                  <TableCell className="text-right text-primary font-medium">{formatCurrency(r.voluire)}</TableCell>
-                </TableRow>
-              ))}
-              <TableRow className="bg-muted/50 font-bold">
-                <TableCell>Total</TableCell>
-                <TableCell className="text-right">{totais.qtd}</TableCell>
-                <TableCell className="text-right">{formatCurrency(totais.vgv)}</TableCell>
-                <TableCell className="text-right">{formatCurrency(totais.comissao_bruta)}</TableCell>
-                <TableCell className="text-right text-emerald-600">{formatCurrency(totais.corretores)}</TableCell>
-                <TableCell className="text-right text-amber-600">{formatCurrency(totais.gestores)}</TableCell>
-                <TableCell className="text-right text-primary">{formatCurrency(totais.voluire)}</TableCell>
-              </TableRow>
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
     </div>
   );
 }
