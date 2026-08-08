@@ -791,6 +791,18 @@ export type Database = {
         Args: { p_venda_id: string }
         Returns: undefined
       }
+      resumo_dashboard_anual: {
+        Args: { p_ano: number }
+        Returns: {
+          comissao_bruta: number
+          corretores: number
+          gestores: number
+          mes: number
+          qtd_vendas: number
+          vgv: number
+          voluire: number
+        }[]
+      }
       totais_empresa: {
         Args: { p_ano: number }
         Returns: {
