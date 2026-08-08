@@ -68,7 +68,6 @@ export default function CadastroUnificadoDialog({ triggerLabel = "Cadastrar usu√
           telefone_pessoal: fd.get("telefone_pessoal"),
           email_pessoal: fd.get("email_pessoal"),
           data_nascimento: fd.get("data_nascimento"),
-          data_admissao: fd.get("data_admissao"),
         },
       });
       if (error) throw error;
@@ -215,10 +214,6 @@ export default function CadastroUnificadoDialog({ triggerLabel = "Cadastrar usu√
               <div className="space-y-2">
                 <Label>Data de nascimento</Label>
                 <Input name="data_nascimento" type="date" />
-              </div>
-              <div className="space-y-2">
-                <Label>Data de admiss√£o</Label>
-                <Input name="data_admissao" type="date" />
               </div>
             </div>
 
