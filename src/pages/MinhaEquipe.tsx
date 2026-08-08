@@ -56,13 +56,8 @@ export default function MinhaEquipe() {
     queryKey: ["equipe-vendas", ids],
     enabled: ids.length > 0,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("vendas")
-        .select("id, corretor_id, valor, data_venda, status")
-        .in("corretor_id", ids)
-        .eq("status", "ativa");
-      if (error) throw error;
-      return data ?? [];
+      const rows = await fetchVendasPorCorretor(ids);
+      return rows.filter((v) => v.status === "ativa");
     },
   });
 
