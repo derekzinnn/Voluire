@@ -1,0 +1,1 @@
+ALTER TABLE public.corretor_perfis DROP COLUMN IF EXISTS data_admissao;

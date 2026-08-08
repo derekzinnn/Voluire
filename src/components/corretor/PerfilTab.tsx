@@ -127,7 +127,6 @@ export default function PerfilTab({ corretorId, perfil, podeGerenciar, isDiretor
       telefone_pessoal: txt("telefone_pessoal"),
       email_pessoal: txt("email_pessoal"),
       creci: txt("creci"),
-      data_admissao: txt("data_admissao"),
       disc_dominancia: num("disc_dominancia"),
       disc_influencia: num("disc_influencia"),
       disc_estabilidade: num("disc_estabilidade"),
@@ -167,10 +166,6 @@ export default function PerfilTab({ corretorId, perfil, podeGerenciar, isDiretor
               <div className="space-y-2">
                 <Label>CRECI</Label>
                 <Input name="creci" defaultValue={perfil?.creci ?? ""} disabled={readOnly} />
-              </div>
-              <div className="space-y-2">
-                <Label>Data de admissão</Label>
-                <Input type="date" name="data_admissao" defaultValue={perfil?.data_admissao ?? ""} disabled={readOnly} />
               </div>
               {podeGerenciar && (
                 <div className="space-y-2">
