@@ -120,14 +120,6 @@ export default function CorretorDetalhe() {
                   Split:{" "}
                   <span className="text-foreground">{formatPercent(Number(corretor.comissao_percentual))}</span>
                 </span>
-                <span className="text-muted-foreground">
-                  Admissão:{" "}
-                  <span className="text-foreground">
-                    {perfil?.data_admissao
-                      ? new Date(perfil.data_admissao + "T12:00:00").toLocaleDateString("pt-BR")
-                      : "—"}
-                  </span>
-                </span>
               </div>
             </div>
           </CardContent>

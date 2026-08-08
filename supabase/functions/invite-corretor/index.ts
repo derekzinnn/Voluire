@@ -81,7 +81,6 @@ Deno.serve(async (req) => {
       telefone_pessoal: clean(body.telefone_pessoal),
       email_pessoal: clean(body.email_pessoal),
       data_nascimento: clean(body.data_nascimento),
-      data_admissao: clean(body.data_admissao),
     };
 
     adminClient = createClient(supabaseUrl, serviceRoleKey);
@@ -152,7 +151,6 @@ Deno.serve(async (req) => {
         telefone_pessoal: perfil.telefone_pessoal,
         email_pessoal: perfil.email_pessoal,
         data_nascimento: perfil.data_nascimento,
-        data_admissao: perfil.data_admissao,
       };
       if (Object.values(perfilValores).some((v) => v !== null)) {
         const { error } = await adminClient
