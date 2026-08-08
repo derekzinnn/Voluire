@@ -12,11 +12,7 @@ import Vendas from "@/pages/Vendas";
 import Corretores from "@/pages/Corretores";
 import Parceiros from "@/pages/Parceiros";
 import CorretorDetalhe from "@/pages/CorretorDetalhe";
-import Comissoes from "@/pages/Comissoes";
 import Financeiro from "@/pages/Financeiro";
-import Metas from "@/pages/Metas";
-import Marketing from "@/pages/Marketing";
-import PlacarVoluire from "@/pages/PlacarVoluire";
 import GestaoUsuarios from "@/pages/GestaoUsuarios";
 import MinhaEquipe from "@/pages/MinhaEquipe";
 import NotFound from "@/pages/NotFound";
@@ -51,11 +47,7 @@ function AppRoutes() {
         <Route path="/corretores" element={<Corretores />} />
         <Route path="/corretores/:id" element={<CorretorDetalhe />} />
         <Route path="/parceiros" element={<Parceiros />} />
-        <Route path="/comissoes" element={<Comissoes />} />
         <Route path="/financeiro" element={<Financeiro />} />
-        <Route path="/metas" element={<Metas />} />
-        <Route path="/marketing" element={<Marketing />} />
-        <Route path="/placar-voluire" element={<PlacarVoluire />} />
         <Route path="/minha-equipe" element={<MinhaEquipe />} />
         <Route path="/gestao-usuarios" element={<GestaoUsuarios />} />
 
