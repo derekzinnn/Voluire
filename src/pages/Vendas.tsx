@@ -194,21 +194,21 @@ export default function Vendas() {
 
       // Parcelas: recriadas conforme a forma de pagamento
       await supabase.from("venda_parcelas").delete().eq("venda_id", vendaId!);
-      const qtd = form.forma_pagamento === "a_vista" ? 1 : Math.max(1, Number(form.qtd_parcelas) || 1);
-      const valorParcela = Number(form.valor) / qtd;
-      const base = new Date(form.primeira_parcela + "T12:00:00");
-      const parcelasRows = Array.from({ length: qtd }, (_, i) => {
-        const d = new Date(base);
-        d.setMonth(d.getMonth() + i);
-        return {
-          venda_id: vendaId!,
-          numero: i + 1,
-          valor: valorParcela,
-          data_prevista: d.toISOString().split("T")[0],
-          tipo: form.forma_pagamento,
-          status: "prevista",
-        };
-      });
+      const cronograma =
+        form.forma_pagamento === "a_vista"
+          ? [{ valor: form.valor, data_prevista: form.primeira_parcela }]
+          : parcelasEdit.length > 0
+            ? parcelasEdit
+            : gerarParcelas(Number(form.qtd_parcelas), form.primeira_parcela, Number(form.valor));
+      if (cronograma.some((p) => !p.data_prevista)) throw new Error("Informe a data prevista de todas as parcelas.");
+      const parcelasRows = cronograma.map((p, i) => ({
+        venda_id: vendaId!,
+        numero: i + 1,
+        valor: Number(p.valor) || 0,
+        data_prevista: p.data_prevista,
+        tipo: form.forma_pagamento,
+        status: "prevista",
+      }));
       const { error: pErr } = await supabase.from("venda_parcelas").insert(parcelasRows);
       if (pErr) throw pErr;
     },
@@ -219,6 +219,7 @@ export default function Vendas() {
       setOpen(false);
       setEditId(null);
       setForm(emptyForm());
+      setParcelasEdit([]);
     },
     onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
   });
