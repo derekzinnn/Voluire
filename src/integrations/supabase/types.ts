@@ -64,7 +64,6 @@ export type Database = {
       }
       comissoes: {
         Row: {
-          corretor_id: string | null
           created_at: string
           data_recebimento: string | null
           id: string
@@ -72,13 +71,12 @@ export type Database = {
           percentual_total: number
           status: string
           updated_at: string
-          valor_corretor: number
+          valor_corretores: number
           valor_empresa: number
           valor_total: number
           venda_id: string
         }
         Insert: {
-          corretor_id?: string | null
           created_at?: string
           data_recebimento?: string | null
           id?: string
@@ -86,13 +84,12 @@ export type Database = {
           percentual_total?: number
           status?: string
           updated_at?: string
-          valor_corretor: number
-          valor_empresa: number
-          valor_total: number
+          valor_corretores?: number
+          valor_empresa?: number
+          valor_total?: number
           venda_id: string
         }
         Update: {
-          corretor_id?: string | null
           created_at?: string
           data_recebimento?: string | null
           id?: string
@@ -100,23 +97,16 @@ export type Database = {
           percentual_total?: number
           status?: string
           updated_at?: string
-          valor_corretor?: number
+          valor_corretores?: number
           valor_empresa?: number
           valor_total?: number
           venda_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "comissoes_corretor_id_fkey"
-            columns: ["corretor_id"]
-            isOneToOne: false
-            referencedRelation: "corretores"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "comissoes_venda_id_fkey"
             columns: ["venda_id"]
-            isOneToOne: false
+            isOneToOne: true
             referencedRelation: "vendas"
             referencedColumns: ["id"]
           },
@@ -376,6 +366,39 @@ export type Database = {
         }
         Relationships: []
       }
+      gestor_faixas: {
+        Row: {
+          ativo: boolean
+          base: string
+          created_at: string
+          faturamento_max: number | null
+          faturamento_min: number
+          id: string
+          percentual: number
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          base?: string
+          created_at?: string
+          faturamento_max?: number | null
+          faturamento_min: number
+          id?: string
+          percentual: number
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          base?: string
+          created_at?: string
+          faturamento_max?: number | null
+          faturamento_min?: number
+          id?: string
+          percentual?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       metas: {
         Row: {
           ano: number
@@ -500,6 +523,57 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      parceiros: {
+        Row: {
+          ativo: boolean
+          cnpj: string | null
+          comissao_percentual: number
+          created_at: string
+          creci: string | null
+          email: string | null
+          endereco: string | null
+          id: string
+          nome: string
+          observacao: string | null
+          pix: string | null
+          telefone: string | null
+          tipo: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          cnpj?: string | null
+          comissao_percentual?: number
+          created_at?: string
+          creci?: string | null
+          email?: string | null
+          endereco?: string | null
+          id?: string
+          nome: string
+          observacao?: string | null
+          pix?: string | null
+          telefone?: string | null
+          tipo?: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          cnpj?: string | null
+          comissao_percentual?: number
+          created_at?: string
+          creci?: string | null
+          email?: string | null
+          endereco?: string | null
+          id?: string
+          nome?: string
+          observacao?: string | null
+          pix?: string | null
+          telefone?: string | null
+          tipo?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       placar_entregas: {
         Row: {
@@ -630,14 +704,114 @@ export type Database = {
         }
         Relationships: []
       }
+      venda_corretores: {
+        Row: {
+          corretor_id: string
+          created_at: string
+          id: string
+          participacao_percentual: number
+          percentual_corretor: number
+          venda_id: string
+        }
+        Insert: {
+          corretor_id: string
+          created_at?: string
+          id?: string
+          participacao_percentual?: number
+          percentual_corretor: number
+          venda_id: string
+        }
+        Update: {
+          corretor_id?: string
+          created_at?: string
+          id?: string
+          participacao_percentual?: number
+          percentual_corretor?: number
+          venda_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "venda_corretores_corretor_id_fkey"
+            columns: ["corretor_id"]
+            isOneToOne: false
+            referencedRelation: "corretores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "venda_corretores_venda_id_fkey"
+            columns: ["venda_id"]
+            isOneToOne: false
+            referencedRelation: "vendas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      venda_parcelas: {
+        Row: {
+          created_at: string
+          data_prevista: string
+          data_recebimento: string | null
+          dias_adiados: number
+          id: string
+          numero: number
+          observacao: string | null
+          status: string
+          tipo: string
+          updated_at: string
+          valor: number
+          venda_id: string
+        }
+        Insert: {
+          created_at?: string
+          data_prevista: string
+          data_recebimento?: string | null
+          dias_adiados?: number
+          id?: string
+          numero?: number
+          observacao?: string | null
+          status?: string
+          tipo?: string
+          updated_at?: string
+          valor: number
+          venda_id: string
+        }
+        Update: {
+          created_at?: string
+          data_prevista?: string
+          data_recebimento?: string | null
+          dias_adiados?: number
+          id?: string
+          numero?: number
+          observacao?: string | null
+          status?: string
+          tipo?: string
+          updated_at?: string
+          valor?: number
+          venda_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "venda_parcelas_venda_id_fkey"
+            columns: ["venda_id"]
+            isOneToOne: false
+            referencedRelation: "vendas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vendas: {
         Row: {
+          captador_corretor_id: string | null
           cliente_nome: string
-          corretor_id: string | null
+          comissao_percentual_bruta: number
           created_at: string
           data_venda: string
           empreendimento_id: string | null
+          forma_pagamento: string
           id: string
+          numero_contrato: string
+          observacao: string | null
+          parceiro_id: string | null
           roi_trafego: string | null
           status: string
           unidade: string
@@ -645,12 +819,17 @@ export type Database = {
           valor: number
         }
         Insert: {
+          captador_corretor_id?: string | null
           cliente_nome: string
-          corretor_id?: string | null
+          comissao_percentual_bruta?: number
           created_at?: string
-          data_venda: string
+          data_venda?: string
           empreendimento_id?: string | null
+          forma_pagamento?: string
           id?: string
+          numero_contrato: string
+          observacao?: string | null
+          parceiro_id?: string | null
           roi_trafego?: string | null
           status?: string
           unidade: string
@@ -658,12 +837,17 @@ export type Database = {
           valor: number
         }
         Update: {
+          captador_corretor_id?: string | null
           cliente_nome?: string
-          corretor_id?: string | null
+          comissao_percentual_bruta?: number
           created_at?: string
           data_venda?: string
           empreendimento_id?: string | null
+          forma_pagamento?: string
           id?: string
+          numero_contrato?: string
+          observacao?: string | null
+          parceiro_id?: string | null
           roi_trafego?: string | null
           status?: string
           unidade?: string
@@ -672,8 +856,8 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "vendas_corretor_id_fkey"
-            columns: ["corretor_id"]
+            foreignKeyName: "vendas_captador_corretor_id_fkey"
+            columns: ["captador_corretor_id"]
             isOneToOne: false
             referencedRelation: "corretores"
             referencedColumns: ["id"]
@@ -685,6 +869,13 @@ export type Database = {
             referencedRelation: "empreendimentos"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "vendas_parceiro_id_fkey"
+            columns: ["parceiro_id"]
+            isOneToOne: false
+            referencedRelation: "parceiros"
+            referencedColumns: ["id"]
+          },
         ]
       }
     }
@@ -693,7 +884,21 @@ export type Database = {
     }
     Functions: {
       can_manage_corretor: { Args: { p_corretor_id: string }; Returns: boolean }
+      can_manage_venda: { Args: { p_venda_id: string }; Returns: boolean }
       can_view_corretor: { Args: { p_corretor_id: string }; Returns: boolean }
+      can_view_venda: { Args: { p_venda_id: string }; Returns: boolean }
+      comissao_gestor_mensal: {
+        Args: { p_ano: number; p_mes: number }
+        Returns: {
+          comissao_bruta_equipe: number
+          equipe_id: string
+          equipe_nome: string
+          faixa_percentual: number
+          gestor_user_id: string
+          valor_gestor: number
+          vgv_equipe: number
+        }[]
+      }
       dashboard_mensal: {
         Args: { p_ano: number }
         Returns: {
@@ -742,6 +947,10 @@ export type Database = {
           vgv: number
           vgv_quitado: number
         }[]
+      }
+      recalc_comissao_venda: {
+        Args: { p_venda_id: string }
+        Returns: undefined
       }
       totais_empresa: {
         Args: { p_ano: number }
