@@ -165,7 +165,7 @@ export default function Vendas() {
         parceiro_id: form.parceiro_id === NONE ? null : form.parceiro_id,
         valor: Number(form.valor),
         data_venda: form.data_venda,
-        comissao_percentual_bruta: Number(form.comissao_percentual_bruta),
+        comissao_percentual_bruta: 6,
         forma_pagamento: form.forma_pagamento,
         captador_corretor_id: form.captador_corretor_id === NONE ? null : form.captador_corretor_id,
         status: form.status,
@@ -267,7 +267,7 @@ export default function Vendas() {
       parceiro_id: v.parceiro_id ?? NONE,
       valor: String(v.valor ?? ""),
       data_venda: v.data_venda ?? "",
-      comissao_percentual_bruta: String(v.comissao_percentual_bruta ?? "6"),
+      comissao_percentual_bruta: "6",
       forma_pagamento: v.forma_pagamento ?? "a_vista",
       captador_corretor_id: v.captador_corretor_id ?? NONE,
       status: v.status ?? "ativa",
@@ -355,8 +355,8 @@ export default function Vendas() {
                 <Input type="number" step="0.01" value={form.valor} onChange={(e) => set("valor", e.target.value)} />
               </div>
               <div className="space-y-2">
-                <Label>Comissão bruta (%)</Label>
-                <Input type="number" step="0.01" value={form.comissao_percentual_bruta} onChange={(e) => set("comissao_percentual_bruta", e.target.value)} />
+                <Label>Comissão bruta (6% fixo)</Label>
+                <Input value={formatCurrency((Number(form.valor) || 0) * 0.06)} readOnly disabled />
               </div>
               <div className="space-y-2">
                 <Label>Forma de pagamento</Label>
