@@ -89,6 +89,6 @@ export function canAccessPage(role: AppRole | null, page: string): boolean {
 
 
   // Corretor allowed pages
-  const corretorPages = ["/", "/vendas", "/comissoes", "/metas", "/placar-voluire"];
+  const corretorPages = ["/", "/vendas"];
   return corretorPages.includes(page);
 }

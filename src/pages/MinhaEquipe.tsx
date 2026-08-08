@@ -5,7 +5,7 @@ import { fetchVendasPorCorretor } from "@/lib/vendas";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Users, TrendingUp, Trophy, MapPin } from "lucide-react";
+import { Users, TrendingUp, MapPin } from "lucide-react";
 import { formatCurrency } from "@/lib/format";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useNavigate } from "react-router-dom";
@@ -61,21 +61,6 @@ export default function MinhaEquipe() {
     },
   });
 
-  const { data: entregas = [] } = useQuery({
-    queryKey: ["equipe-entregas", ids],
-    enabled: ids.length > 0,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("placar_entregas")
-        .select("corretor_id, trimestre, ano, placar_tarefas(pontos)")
-        .in("corretor_id", ids)
-        .eq("ano", ANO)
-        .eq("trimestre", TRIMESTRE);
-      if (error) throw error;
-      return data ?? [];
-    },
-  });
-
   const { data: captacoes = [] } = useQuery({
     queryKey: ["equipe-captacoes", ids],
     enabled: ids.length > 0,
@@ -101,24 +86,20 @@ export default function MinhaEquipe() {
       const vgvAno = vs
         .filter((v) => new Date(v.data_venda + "T12:00:00").getFullYear() === ANO)
         .reduce((s, v) => s + Number(v.valor), 0);
-      const pontos = entregas
-        .filter((e) => e.corretor_id === c.id)
-        .reduce((s, e: any) => s + (e.placar_tarefas?.pontos ?? 0), 0);
       const caps = captacoes.filter((cap) => {
         if (cap.corretor_id !== c.id) return false;
         const d = new Date(cap.data_captacao + "T12:00:00");
         return d.getFullYear() === ANO && Math.floor(d.getMonth() / 3) + 1 === TRIMESTRE;
       }).length;
-      return { ...c, vgvMes, vgvAno, vendas: vs.length, pontos, captacoes: caps };
+      return { ...c, vgvMes, vgvAno, vendas: vs.length, captacoes: caps };
     });
-  }, [corretores, vendas, entregas, captacoes]);
+  }, [corretores, vendas, captacoes]);
 
   const totais = useMemo(
     () => ({
       ativos: porCorretor.filter((c) => c.ativo).length,
       vgvMes: porCorretor.reduce((s, c) => s + c.vgvMes, 0),
       vgvAno: porCorretor.reduce((s, c) => s + c.vgvAno, 0),
-      pontos: porCorretor.reduce((s, c) => s + c.pontos, 0),
     }),
     [porCorretor]
   );
@@ -160,7 +141,7 @@ export default function MinhaEquipe() {
         )}
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Corretores ativos</CardTitle>
@@ -188,15 +169,6 @@ export default function MinhaEquipe() {
             <p className="text-2xl font-bold">{formatCurrency(totais.vgvAno)}</p>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pontos no Placar</CardTitle>
-            <Trophy className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">{totais.pontos}</p>
-          </CardContent>
-        </Card>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -221,10 +193,6 @@ export default function MinhaEquipe() {
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Vendas ativas</span>
                 <span className="font-medium">{c.vendas}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Pontos no trimestre</span>
-                <span className="font-medium">{c.pontos}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="flex items-center gap-1 text-muted-foreground">

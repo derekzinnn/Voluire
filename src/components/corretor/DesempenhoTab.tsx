@@ -3,17 +3,11 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchVendasPorCorretor } from "@/lib/vendas";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/format";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 const ANO = new Date().getFullYear();
 const TRIMESTRE_ATUAL = Math.floor(new Date().getMonth() / 3) + 1;
-
-const META_PONTOS = 120;
-const META_VGV = 900000;
-const META_CAPTACOES = 15;
 
 function trimestreDe(dataISO: string) {
   return Math.floor(new Date(dataISO + "T12:00:00").getMonth() / 3) + 1;
@@ -28,32 +22,6 @@ export default function DesempenhoTab({ corretorId }: { corretorId: string }) {
     queryFn: async () => {
       const rows = await fetchVendasPorCorretor([corretorId]);
       return rows.filter((v) => v.status !== "distrato");
-    },
-  });
-
-  const { data: metas = [] } = useQuery({
-    queryKey: ["desempenho-metas", corretorId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("metas")
-        .select("id, tipo, categoria, valor, ano, mes, trimestre")
-        .eq("corretor_id", corretorId)
-        .eq("ano", ANO);
-      if (error) throw error;
-      return data ?? [];
-    },
-  });
-
-  const { data: entregas = [] } = useQuery({
-    queryKey: ["desempenho-entregas", corretorId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("placar_entregas")
-        .select("id, trimestre, ano, placar_tarefas(pontos)")
-        .eq("corretor_id", corretorId)
-        .eq("ano", ANO);
-      if (error) throw error;
-      return data ?? [];
     },
   });
 
@@ -82,39 +50,17 @@ export default function DesempenhoTab({ corretorId }: { corretorId: string }) {
           numero: t,
           vgv: vs.reduce((s, v) => s + Number(v.valor), 0),
           vendas: vs.length,
-          pontos: entregas
-            .filter((e) => e.trimestre === t)
-            .reduce((s, e: any) => s + (e.placar_tarefas?.pontos ?? 0), 0),
         };
       }),
-    [vendasAno, entregas]
+    [vendasAno]
   );
 
   const triAtual = porTrimestre[TRIMESTRE_ATUAL - 1];
   const semCaptacoes = captacoes.length === 0;
 
-  const metasComRealizado = useMemo(
-    () =>
-      metas.map((m) => {
-        const alvoVendas = vendasAno.filter((v) => {
-          const d = new Date(v.data_venda + "T12:00:00");
-          if (m.mes) return d.getMonth() + 1 === m.mes;
-          if (m.trimestre) return trimestreDe(v.data_venda) === m.trimestre;
-          return true;
-        });
-        const realizado =
-          m.categoria === "vendas"
-            ? alvoVendas.length
-            : alvoVendas.reduce((s, v) => s + Number(v.valor), 0);
-        const pct = Number(m.valor) > 0 ? Math.min(100, (realizado / Number(m.valor)) * 100) : 0;
-        return { ...m, realizado, pct };
-      }),
-    [metas, vendasAno]
-  );
-
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">VGV do ano</CardTitle>
@@ -135,15 +81,6 @@ export default function DesempenhoTab({ corretorId }: { corretorId: string }) {
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Pontos no Placar</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">{triAtual?.pontos ?? 0}</p>
-            <p className="text-xs text-muted-foreground">no trimestre atual</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">Captações</CardTitle>
           </CardHeader>
           <CardContent>
@@ -159,56 +96,6 @@ export default function DesempenhoTab({ corretorId }: { corretorId: string }) {
         </Card>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Campanha Placar Voluire — {TRIMESTRE_ATUAL}º trimestre</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-5">
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Pontos (mínimo {META_PONTOS})</span>
-              <span className="font-medium">
-                {triAtual?.pontos ?? 0}/{META_PONTOS}
-              </span>
-            </div>
-            <Progress value={Math.min(100, ((triAtual?.pontos ?? 0) / META_PONTOS) * 100)} />
-          </div>
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">VGV (mínimo {formatCurrency(META_VGV)})</span>
-              <span className="font-medium">{formatCurrency(triAtual?.vgv ?? 0)}</span>
-            </div>
-            <Progress value={Math.min(100, ((triAtual?.vgv ?? 0) / META_VGV) * 100)} />
-          </div>
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Captações (mínimo {META_CAPTACOES})</span>
-              {semCaptacoes ? (
-                <Badge variant="secondary">Sem dados</Badge>
-              ) : (
-                <span className="font-medium">
-                  {captacoes.filter((c) => trimestreDe(c.data_captacao) === TRIMESTRE_ATUAL && anoDe(c.data_captacao) === ANO).length}/
-                  {META_CAPTACOES}
-                </span>
-              )}
-            </div>
-            {semCaptacoes ? (
-              <p className="text-xs text-muted-foreground">
-                O cadastro de captações/agenciamentos entra em uma etapa futura. Até lá este critério não é avaliado.
-              </p>
-            ) : (
-              <Progress
-                value={Math.min(
-                  100,
-                  (captacoes.filter((c) => trimestreDe(c.data_captacao) === TRIMESTRE_ATUAL && anoDe(c.data_captacao) === ANO).length /
-                    META_CAPTACOES) *
-                    100
-                )}
-              />
-            )}
-          </div>
-        </CardContent>
-      </Card>
 
       <Card>
         <CardHeader>
@@ -227,34 +114,6 @@ export default function DesempenhoTab({ corretorId }: { corretorId: string }) {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Metas individuais — {ANO}</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {metasComRealizado.map((m) => (
-            <div key={m.id} className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">
-                  {m.categoria === "vendas" ? "Nº de vendas" : "VGV"} ·{" "}
-                  {m.mes ? `${m.mes}/${m.ano}` : m.trimestre ? `${m.trimestre}º tri` : "Ano"}
-                </span>
-                <span className="font-medium">
-                  {m.categoria === "vendas"
-                    ? `${m.realizado}/${Number(m.valor)}`
-                    : `${formatCurrency(m.realizado)} / ${formatCurrency(Number(m.valor))}`}
-                </span>
-              </div>
-              <Progress value={m.pct} />
-            </div>
-          ))}
-          {metasComRealizado.length === 0 && (
-            <p className="py-6 text-center text-sm text-muted-foreground">
-              Nenhuma meta individual cadastrada para este corretor em {ANO}.
-            </p>
-          )}
-        </CardContent>
-      </Card>
     </div>
   );
 }
