@@ -1,42 +1,53 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { formatCurrency, formatDate } from "@/lib/format";
+import { formatCurrency, formatDate, formatPercent } from "@/lib/format";
 import { useToast } from "@/hooks/use-toast";
-import { CheckCircle, Pencil } from "lucide-react";
+import { useUserRole } from "@/hooks/useUserRole";
+import { CheckCircle } from "lucide-react";
 
 const statusLabels: Record<string, string> = { a_receber: "A Receber", recebido: "Recebido", parcelado: "Parcelado", distrato: "Distrato" };
-const statusColors: Record<string, string> = { a_receber: "bg-amber-100 text-amber-800", recebido: "bg-emerald-100 text-emerald-800", parcelado: "bg-blue-100 text-blue-800", distrato: "bg-red-100 text-red-800" };
+const statusColors: Record<string, string> = {
+  a_receber: "bg-amber-100 text-amber-800",
+  recebido: "bg-emerald-100 text-emerald-800",
+  parcelado: "bg-blue-100 text-blue-800",
+  distrato: "bg-red-100 text-red-800",
+};
 
-// IDs dos corretores excluídos do cálculo do gerente geral
-const GERENTE_EXCLUIDOS = [
-  "ba68df50-e5f8-46f8-892c-d9e2af6ac38b", // Andressa Pedroso
-  "11f999e0-d2d1-411d-9a6b-1d2d40e4c70b", // Caroline
-];
-const GERENTE_PERCENTUAL = 0.02; // 2% do valor da comissão total
+const MESES = Array.from({ length: 12 }, (_, i) => ({
+  valor: i + 1,
+  nome: new Date(2026, i).toLocaleString("pt-BR", { month: "long" }),
+}));
 
 export default function Comissoes() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const [editingComissao, setEditingComissao] = useState<any>(null);
+  const { role, corretorId, isDiretor, isGestor } = useUserRole();
+  const hoje = new Date();
   const [filtroMes, setFiltroMes] = useState<string>("todos");
   const [filtroCorretor, setFiltroCorretor] = useState<string>("todos");
-  const [filtroEmpreendimento, setFiltroEmpreendimento] = useState<string>("todos");
+  const [mesGestor, setMesGestor] = useState<string>(String(hoje.getMonth() + 1));
+
+  const ano = hoje.getFullYear();
 
   const { data: comissoes = [] } = useQuery({
     queryKey: ["comissoes"],
     queryFn: async () => {
-      const { data } = await supabase.from("comissoes").select("*, corretores(nome, comissao_percentual), vendas(cliente_nome, valor, data_venda, empreendimento_id, empreendimentos(nome))").order("created_at", { ascending: false });
-      return data || [];
+      const { data, error } = await supabase
+        .from("comissoes")
+        .select(
+          "*, vendas(numero_contrato, cliente_nome, valor, data_venda, status, forma_pagamento, empreendimento_id, empreendimentos(nome), venda_corretores(corretor_id, percentual_corretor, participacao_percentual, corretores(nome)))"
+        )
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data ?? [];
     },
   });
 
@@ -44,285 +55,272 @@ export default function Comissoes() {
     queryKey: ["corretores-ativos"],
     queryFn: async () => {
       const { data } = await supabase.from("corretores").select("id, nome").eq("ativo", true).order("nome");
-      return data || [];
+      return data ?? [];
     },
   });
 
-  const { data: empreendimentos = [] } = useQuery({
-    queryKey: ["empreendimentos"],
+  const { data: gestorLinhas = [] } = useQuery({
+    queryKey: ["comissao-gestor", ano, mesGestor],
+    enabled: isGestor,
     queryFn: async () => {
-      const { data } = await supabase.from("empreendimentos").select("id, nome").order("nome");
-      return data || [];
+      const { data, error } = await supabase.rpc("comissao_gestor_mensal", { p_ano: ano, p_mes: Number(mesGestor) });
+      if (error) throw error;
+      return data ?? [];
     },
   });
 
   const updateStatus = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
-      const existing = comissoes.find(c => c.id === id);
+      const existing = comissoes.find((c: any) => c.id === id) as any;
       const update: any = { status };
-
-      if (status === "recebido") {
-        update.data_recebimento = existing?.data_recebimento || new Date().toISOString().split("T")[0];
-      } else {
-        update.data_recebimento = null;
-      }
-
+      update.data_recebimento =
+        status === "recebido" ? existing?.data_recebimento || new Date().toISOString().split("T")[0] : null;
       const { error } = await supabase.from("comissoes").update(update).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["comissoes"] });
       queryClient.invalidateQueries({ queryKey: ["vendas"] });
-      queryClient.invalidateQueries({ queryKey: ["corretores"] });
       toast({ title: "Status atualizado!" });
-    },
-  });
-
-  const updateComissao = useMutation({
-    mutationFn: async (data: any) => {
-      const { id, ...fields } = data;
-      const { error } = await supabase.from("comissoes").update(fields).eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["comissoes"] });
-      queryClient.invalidateQueries({ queryKey: ["vendas"] });
-      queryClient.invalidateQueries({ queryKey: ["corretores"] });
-      setEditingComissao(null);
-      toast({ title: "Comissão atualizada!" });
     },
     onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
   });
 
-  const handleEditSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (!editingComissao) return;
-    updateComissao.mutate({
-      id: editingComissao.id,
-      percentual_total: editingComissao.percentual_total,
-      valor_total: editingComissao.valor_total,
-      valor_empresa: editingComissao.valor_empresa,
-      valor_corretor: editingComissao.valor_corretor,
-      status: editingComissao.status,
-      observacao: editingComissao.observacao || null,
-      data_recebimento: editingComissao.data_recebimento || null,
-    });
+  const filtered = useMemo(
+    () =>
+      (comissoes as any[]).filter((c) => {
+        const v = c.vendas;
+        if (filtroMes !== "todos" && v?.data_venda) {
+          const m = new Date(v.data_venda + "T12:00:00").getMonth() + 1;
+          if (String(m) !== filtroMes) return false;
+        }
+        if (filtroCorretor !== "todos") {
+          const tem = (v?.venda_corretores ?? []).some((vc: any) => vc.corretor_id === filtroCorretor);
+          if (!tem) return false;
+        }
+        return true;
+      }),
+    [comissoes, filtroMes, filtroCorretor]
+  );
+
+  // Fatia do corretor logado (visão restrita)
+  const minhaFatia = (c: any) => {
+    const vc = (c.vendas?.venda_corretores ?? []).find((x: any) => x.corretor_id === corretorId);
+    if (!vc) return 0;
+    return (
+      (Number(c.valor_total) || 0) *
+      (Number(vc.percentual_corretor) || 0) / 100 *
+      (Number(vc.participacao_percentual) || 100) / 100
+    );
   };
 
-  const recalcValues = (percentual: number) => {
-    if (!editingComissao) return;
-    const vendaValor = Number((editingComissao.vendas as any)?.valor || 0);
-    const corretorPct = Number((editingComissao.corretores as any)?.comissao_percentual || 50);
-    const valorTotal = vendaValor * (percentual / 100);
-    const valorCorretor = valorTotal * (corretorPct / 100);
-    const valorEmpresa = valorTotal - valorCorretor;
-    setEditingComissao({
-      ...editingComissao,
-      percentual_total: percentual,
-      valor_total: Math.round(valorTotal * 100) / 100,
-      valor_empresa: Math.round(valorEmpresa * 100) / 100,
-      valor_corretor: Math.round(valorCorretor * 100) / 100,
-    });
-  };
+  const soma = (list: any[], fn: (c: any) => number) => list.reduce((s, c) => s + fn(c), 0);
+  const ativas = filtered.filter((c) => c.vendas?.status !== "distrato");
 
-  const filtered = comissoes.filter(c => {
-    if (filtroMes !== "todos") {
-      const dataVenda = (c.vendas as any)?.data_venda;
-      if (dataVenda) {
-        const m = new Date(dataVenda + "T12:00:00").getMonth() + 1;
-        if (m.toString() !== filtroMes) return false;
-      }
-    }
-    if (filtroCorretor !== "todos" && c.corretor_id !== filtroCorretor) return false;
-    if (filtroEmpreendimento !== "todos" && (c.vendas as any)?.empreendimento_id !== filtroEmpreendimento) return false;
-    return true;
-  });
+  const vendasBrutas = soma(ativas, (c) => Number(c.vendas?.valor) || 0);
+  const comissaoBruta = soma(ativas, (c) => Number(c.valor_total) || 0);
+  const totalCorretores = soma(ativas, (c) => Number(c.valor_corretores) || 0);
+  const totalVoluire = soma(ativas, (c) => Number(c.valor_empresa) || 0);
+  const meuTotal = soma(ativas, minhaFatia);
+  const meuRecebido = soma(ativas.filter((c) => c.status === "recebido"), minhaFatia);
 
-  const totalAReceber = filtered.filter(c => c.status === "a_receber").reduce((s, c) => s + Number(c.valor_empresa), 0);
-  const totalRecebido = filtered.filter(c => c.status === "recebido").reduce((s, c) => s + Number(c.valor_empresa), 0);
+  const totalGestor = (gestorLinhas as any[]).reduce((s, l) => s + (Number(l.valor_gestor) || 0), 0);
 
-  const calcGerente = (c: any) => {
-    if (GERENTE_EXCLUIDOS.includes(c.corretor_id)) return 0;
-    return Number(c.valor_total) * GERENTE_PERCENTUAL;
-  };
-
-  const totalGerenteRecebido = filtered
-    .filter(c => c.status === "recebido")
-    .reduce((s, c) => s + calcGerente(c), 0);
-  const totalGerenteAReceber = filtered
-    .filter(c => c.status === "a_receber")
-    .reduce((s, c) => s + calcGerente(c), 0);
+  const soCorretor = role === "corretor";
 
   return (
     <div className="space-y-6">
-      {/* Filters */}
       <div className="flex flex-wrap gap-2">
         <Select value={filtroMes} onValueChange={setFiltroMes}>
-          <SelectTrigger className="w-[140px]"><SelectValue placeholder="Mês" /></SelectTrigger>
+          <SelectTrigger className="w-[150px]"><SelectValue placeholder="Mês" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="todos">Todos os meses</SelectItem>
-            {Array.from({ length: 12 }, (_, i) => (
-              <SelectItem key={i + 1} value={(i + 1).toString()}>
-                {new Date(2026, i).toLocaleString("pt-BR", { month: "long" })}
-              </SelectItem>
-            ))}
+            {MESES.map((m) => <SelectItem key={m.valor} value={String(m.valor)}>{m.nome}</SelectItem>)}
           </SelectContent>
         </Select>
-        <Select value={filtroCorretor} onValueChange={setFiltroCorretor}>
-          <SelectTrigger className="w-[160px]"><SelectValue placeholder="Corretor" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="todos">Todos corretores</SelectItem>
-            {corretores.map(c => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}
-          </SelectContent>
-        </Select>
-        <Select value={filtroEmpreendimento} onValueChange={setFiltroEmpreendimento}>
-          <SelectTrigger className="w-[180px]"><SelectValue placeholder="Empreendimento" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="todos">Todos empreend.</SelectItem>
-            {empreendimentos.map(e => <SelectItem key={e.id} value={e.id}>{e.nome}</SelectItem>)}
-          </SelectContent>
-        </Select>
+        {!soCorretor && (
+          <Select value={filtroCorretor} onValueChange={setFiltroCorretor}>
+            <SelectTrigger className="w-[180px]"><SelectValue placeholder="Corretor" /></SelectTrigger>
+            <SelectContent className="max-h-60">
+              <SelectItem value="todos">Todos corretores</SelectItem>
+              {corretores.map((c) => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        )}
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">A Receber (Empresa)</CardTitle></CardHeader>
-          <CardContent><p className="text-2xl font-bold text-amber-600">{formatCurrency(totalAReceber)}</p></CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Recebido (Empresa)</CardTitle></CardHeader>
-          <CardContent><p className="text-2xl font-bold text-emerald-600">{formatCurrency(totalRecebido)}</p></CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Gerente - A Receber</CardTitle></CardHeader>
-          <CardContent><p className="text-2xl font-bold text-amber-600">{formatCurrency(totalGerenteAReceber)}</p></CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Gerente - Recebido</CardTitle></CardHeader>
-          <CardContent><p className="text-2xl font-bold text-emerald-600">{formatCurrency(totalGerenteRecebido)}</p></CardContent>
-        </Card>
+      {soCorretor ? (
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Card>
+            <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Minha comissão (total)</CardTitle></CardHeader>
+            <CardContent><p className="text-2xl font-bold">{formatCurrency(meuTotal)}</p></CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Já recebido</CardTitle></CardHeader>
+            <CardContent><p className="text-2xl font-bold text-emerald-600">{formatCurrency(meuRecebido)}</p></CardContent>
+          </Card>
+        </div>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <Card>
+            <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Vendas brutas</CardTitle></CardHeader>
+            <CardContent><p className="text-2xl font-bold">{formatCurrency(vendasBrutas)}</p></CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Comissão bruta</CardTitle></CardHeader>
+            <CardContent><p className="text-2xl font-bold">{formatCurrency(comissaoBruta)}</p></CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Corretores recebem</CardTitle></CardHeader>
+            <CardContent><p className="text-2xl font-bold text-blue-600">{formatCurrency(totalCorretores)}</p></CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Voluire recebe</CardTitle></CardHeader>
+            <CardContent><p className="text-2xl font-bold text-emerald-600">{formatCurrency(totalVoluire)}</p></CardContent>
+          </Card>
+        </div>
+      )}
+
+      <Tabs defaultValue="contratos">
+        <TabsList>
+          <TabsTrigger value="contratos">Por contrato</TabsTrigger>
+          {isGestor && <TabsTrigger value="gestor">Comissão do gestor</TabsTrigger>}
+        </TabsList>
+
+        <TabsContent value="contratos" className="mt-4">
+          <Card>
+            <CardContent className="p-0 overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Contrato</TableHead>
+                    <TableHead>Cliente</TableHead>
+                    <TableHead>Corretores</TableHead>
+                    {!soCorretor && <TableHead>Venda bruta</TableHead>}
+                    {!soCorretor && <TableHead>Comissão bruta</TableHead>}
+                    <TableHead>{soCorretor ? "Minha comissão" : "Corretores"}</TableHead>
+                    {!soCorretor && <TableHead>Voluire</TableHead>}
+                    <TableHead>Status</TableHead>
+                    {isGestor && <TableHead>Ação</TableHead>}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filtered.map((c: any) => {
+                    const v = c.vendas;
+                    const parts = v?.venda_corretores ?? [];
+                    return (
+                      <TableRow key={c.id}>
+                        <TableCell className="font-mono text-xs">{v?.numero_contrato ?? "—"}</TableCell>
+                        <TableCell>{v?.cliente_nome ?? "—"}</TableCell>
+                        <TableCell className="text-sm">
+                          {parts.length === 0
+                            ? "—"
+                            : parts.map((p: any) => (
+                                <span key={p.corretor_id} className="mr-2 whitespace-nowrap">
+                                  {p.corretores?.nome}{" "}
+                                  <span className="text-muted-foreground">
+                                    ({formatPercent(Number(p.percentual_corretor))}
+                                    {Number(p.participacao_percentual) !== 100 ? ` · ${formatPercent(Number(p.participacao_percentual))}` : ""})
+                                  </span>
+                                </span>
+                              ))}
+                        </TableCell>
+                        {!soCorretor && <TableCell>{formatCurrency(Number(v?.valor) || 0)}</TableCell>}
+                        {!soCorretor && <TableCell className="font-medium">{formatCurrency(Number(c.valor_total))}</TableCell>}
+                        <TableCell className="text-blue-600">
+                          {formatCurrency(soCorretor ? minhaFatia(c) : Number(c.valor_corretores))}
+                        </TableCell>
+                        {!soCorretor && <TableCell className="text-emerald-600">{formatCurrency(Number(c.valor_empresa))}</TableCell>}
+                        <TableCell>
+                          <Badge className={statusColors[c.status]}>{statusLabels[c.status] ?? c.status}</Badge>
+                          {c.status === "recebido" && c.data_recebimento && (
+                            <span className="ml-1 text-xs text-muted-foreground">· {formatDate(c.data_recebimento)}</span>
+                          )}
+                        </TableCell>
+                        {isGestor && (
+                          <TableCell>
+                            {c.status !== "recebido" ? (
+                              <Button variant="ghost" size="sm" onClick={() => updateStatus.mutate({ id: c.id, status: "recebido" })}>
+                                <CheckCircle className="mr-1 h-4 w-4" />Recebido
+                              </Button>
+                            ) : (
+                              <Button variant="ghost" size="sm" onClick={() => updateStatus.mutate({ id: c.id, status: "a_receber" })}>
+                                Reverter
+                              </Button>
+                            )}
+                          </TableCell>
+                        )}
+                      </TableRow>
+                    );
+                  })}
+                  {filtered.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={9} className="py-8 text-center text-muted-foreground">Nenhuma comissão</TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {isGestor && (
+          <TabsContent value="gestor" className="mt-4 space-y-4">
+            <div className="flex flex-wrap items-center gap-3">
+              <Select value={mesGestor} onValueChange={setMesGestor}>
+                <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {MESES.map((m) => <SelectItem key={m.valor} value={String(m.valor)}>{m.nome}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <span className="text-sm text-muted-foreground">
+                Total do mês: <strong className="text-foreground">{formatCurrency(totalGestor)}</strong>
+              </span>
+            </div>
+            <Card>
+              <CardContent className="p-0 overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Equipe</TableHead>
+                      <TableHead>VGV da equipe no mês</TableHead>
+                      <TableHead>Comissão bruta gerada</TableHead>
+                      <TableHead>Faixa</TableHead>
+                      <TableHead>Comissão do gestor</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {(gestorLinhas as any[]).map((l) => (
+                      <TableRow key={l.equipe_id}>
+                        <TableCell className="font-medium">{l.equipe_nome}</TableCell>
+                        <TableCell>{formatCurrency(Number(l.vgv_equipe))}</TableCell>
+                        <TableCell>{formatCurrency(Number(l.comissao_bruta_equipe))}</TableCell>
+                        <TableCell>{formatPercent(Number(l.faixa_percentual))}</TableCell>
+                        <TableCell className="font-semibold text-emerald-600">{formatCurrency(Number(l.valor_gestor))}</TableCell>
+                      </TableRow>
+                    ))}
+                    {gestorLinhas.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={5} className="py-8 text-center text-muted-foreground">
+                          Nenhuma equipe com movimento neste mês.
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+            <p className="text-xs text-muted-foreground">
+              O gestor não entra no faturamento da própria equipe: as vendas feitas por ele são remuneradas pelo split de corretor.
+              As faixas (8% / 10% / 12%) são aplicadas sobre a comissão bruta gerada pela equipe no mês e podem ser editadas em Gestão de Usuários.
+            </p>
+          </TabsContent>
+        )}
+      </Tabs>
+      {isDiretor && <div className="hidden" aria-hidden />}
+      <div className="hidden">
+        <Input aria-hidden />
       </div>
-
-      {/* Edit Dialog */}
-      <Dialog open={!!editingComissao} onOpenChange={(v) => !v && setEditingComissao(null)}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>Editar Comissão</DialogTitle></DialogHeader>
-          {editingComissao && (
-            <form onSubmit={handleEditSubmit} className="space-y-4">
-              <div className="text-sm text-muted-foreground">
-                Cliente: <strong>{(editingComissao.vendas as any)?.cliente_nome}</strong> — Venda: {formatCurrency(Number((editingComissao.vendas as any)?.valor || 0))}
-              </div>
-              <div className="space-y-2">
-                <Label>Percentual Total (%)</Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  value={editingComissao.percentual_total}
-                  onChange={e => recalcValues(Number(e.target.value))}
-                />
-              </div>
-              <div className="grid grid-cols-3 gap-2">
-                <div className="space-y-1">
-                  <Label className="text-xs">Total</Label>
-                  <Input value={formatCurrency(editingComissao.valor_total)} disabled />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Empresa</Label>
-                  <Input value={formatCurrency(editingComissao.valor_empresa)} disabled />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Corretor</Label>
-                  <Input value={formatCurrency(editingComissao.valor_corretor)} disabled />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label>Status</Label>
-                <Select value={editingComissao.status} onValueChange={v => setEditingComissao({ ...editingComissao, status: v })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="a_receber">A Receber</SelectItem>
-                    <SelectItem value="recebido">Recebido</SelectItem>
-                    <SelectItem value="parcelado">Parcelado</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Data Recebimento</Label>
-                <Input
-                  type="date"
-                  value={editingComissao.data_recebimento || ""}
-                  onChange={e => setEditingComissao({ ...editingComissao, data_recebimento: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Observação</Label>
-                <Textarea
-                  value={editingComissao.observacao || ""}
-                  onChange={e => setEditingComissao({ ...editingComissao, observacao: e.target.value })}
-                />
-              </div>
-              <Button type="submit" className="w-full" disabled={updateComissao.isPending}>Salvar</Button>
-            </form>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      <Card>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Cliente</TableHead>
-                <TableHead>Corretor</TableHead>
-                <TableHead>Total (6%)</TableHead>
-                <TableHead>Empresa</TableHead>
-                <TableHead>Corretor</TableHead>
-                <TableHead>Gerente</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Ação</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filtered.map(c => {
-                const gerenteValor = calcGerente(c);
-                return (
-                <TableRow key={c.id}>
-                  <TableCell>{(c.vendas as any)?.cliente_nome || "—"}</TableCell>
-                  <TableCell>{(c.corretores as any)?.nome || "—"}</TableCell>
-                  <TableCell className="font-medium">{formatCurrency(Number(c.valor_total))}</TableCell>
-                  <TableCell>{formatCurrency(Number(c.valor_empresa))}</TableCell>
-                  <TableCell>{formatCurrency(Number(c.valor_corretor))}</TableCell>
-                  <TableCell>{gerenteValor > 0 ? formatCurrency(gerenteValor) : "—"}</TableCell>
-                  <TableCell>
-                    <Badge className={statusColors[c.status]}>{statusLabels[c.status]}</Badge>
-                    {c.status === "recebido" && c.data_recebimento && (
-                      <span className="text-xs text-muted-foreground ml-1">· {formatDate(c.data_recebimento)}</span>
-                    )}
-                  </TableCell>
-                  <TableCell className="flex gap-1">
-                    <Button variant="ghost" size="icon" onClick={() => setEditingComissao({ ...c })}>
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    {c.status !== "recebido" ? (
-                      <Button variant="ghost" size="sm" onClick={() => updateStatus.mutate({ id: c.id, status: "recebido" })}>
-                        <CheckCircle className="h-4 w-4 mr-1" />Recebido
-                      </Button>
-                    ) : (
-                      <Button variant="ghost" size="sm" onClick={() => updateStatus.mutate({ id: c.id, status: "a_receber" })}>
-                        Reverter
-                      </Button>
-                    )}
-                  </TableCell>
-                </TableRow>
-                );
-              })}
-              {filtered.length === 0 && (
-                <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">Nenhuma comissão</TableCell></TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
     </div>
   );
 }
