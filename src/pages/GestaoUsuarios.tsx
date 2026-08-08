@@ -10,6 +10,7 @@ import { UserCheck, Shield, Link2, Unlink } from "lucide-react";
 import type { AppRole } from "@/hooks/useUserRole";
 import EquipesManager from "@/components/EquipesManager";
 import OnboardingEtapasManager from "@/components/OnboardingEtapasManager";
+import GestorFaixasManager from "@/components/GestorFaixasManager";
 import CadastroUnificadoDialog from "@/components/CadastroUnificadoDialog";
 
 const ROLE_LABELS: Record<string, string> = {
@@ -210,6 +211,8 @@ export default function GestaoUsuarios() {
       </Card>
 
       <EquipesManager />
+
+      <GestorFaixasManager />
 
       <OnboardingEtapasManager />
 
