@@ -31,7 +31,7 @@ export default function Metas() {
   const { data: vendas = [] } = useQuery({
     queryKey: ["vendas"],
     queryFn: async () => {
-      const { data } = await supabase.from("vendas").select("valor, data_venda, corretor_id, status").neq("status", "distrato");
+      const { data } = await supabase.from("vendas").select("valor, data_venda, status").neq("status", "distrato");
       return data || [];
     },
   });
