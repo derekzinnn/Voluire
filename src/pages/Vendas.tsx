@@ -73,7 +73,29 @@ export default function Vendas() {
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm());
   const [parcelasVenda, setParcelasVenda] = useState<any | null>(null);
+  const [parcelasEdit, setParcelasEdit] = useState<{ valor: string; data_prevista: string }[]>([]);
   const set = (k: keyof FormState, v: string) => setForm((f) => ({ ...f, [k]: v }));
+
+  function gerarParcelas(qtd: number, primeira: string, valorTotal: number) {
+    const n = Math.max(1, qtd || 1);
+    const base = new Date((primeira || new Date().toISOString().split("T")[0]) + "T12:00:00");
+    const bruto = Math.round(((valorTotal || 0) / n) * 100) / 100;
+    return Array.from({ length: n }, (_, i) => {
+      const d = new Date(base);
+      d.setMonth(d.getMonth() + i);
+      // última parcela absorve a diferença de centavos
+      const valor = i === n - 1 ? Math.round(((valorTotal || 0) - bruto * (n - 1)) * 100) / 100 : bruto;
+      return { valor: String(valor), data_prevista: d.toISOString().split("T")[0] };
+    });
+  }
+
+  const regenerar = () =>
+    setParcelasEdit(gerarParcelas(Number(form.qtd_parcelas), form.primeira_parcela, Number(form.valor)));
+
+  const setParcela = (i: number, k: "valor" | "data_prevista", v: string) =>
+    setParcelasEdit((arr) => arr.map((p, idx) => (idx === i ? { ...p, [k]: v } : p)));
+
+  const totalParcelas = parcelasEdit.reduce((s, p) => s + (Number(p.valor) || 0), 0);
 
   const { data: vendas = [] } = useQuery({
     queryKey: ["vendas"],
