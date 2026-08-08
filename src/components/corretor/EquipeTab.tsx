@@ -100,13 +100,13 @@ export default function EquipeTab({ corretorId, equipeId, splitAtual, podeGerenc
     },
   });
 
-  // Histórico: cada comissão guarda o split aplicado no momento da venda.
-  const { data: comissoes = [] } = useQuery({
+  // Histórico: cada participação de venda guarda o split aplicado no momento da venda.
+  const { data: participacoes = [] } = useQuery({
     queryKey: ["corretor-splits", corretorId],
     queryFn: async () => {
       const { data } = await supabase
-        .from("comissoes")
-        .select("id, valor_total, valor_corretor, valor_empresa, status, vendas(cliente_nome, data_venda, valor)")
+        .from("venda_corretores")
+        .select("id, percentual_corretor, participacao_percentual, vendas(cliente_nome, data_venda, valor, comissao_percentual_bruta, numero_contrato, comissoes(status))")
         .eq("corretor_id", corretorId)
         .order("created_at", { ascending: false })
         .limit(20);
