@@ -17,6 +17,7 @@ import { Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 export default function Financeiro() {
   const [open, setOpen] = useState(false);
   const [filtroMes, setFiltroMes] = useState<string>((new Date().getMonth() + 1).toString());
+  const [mesGerencial, setMesGerencial] = useState<string>((new Date().getMonth() + 1).toString());
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const currentYear = new Date().getFullYear();
