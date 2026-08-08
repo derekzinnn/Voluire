@@ -9,6 +9,7 @@ import { Trash2, IdCard } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import CadastroUnificadoDialog from "@/components/CadastroUnificadoDialog";
+import { fetchVendasPorCorretor } from "@/lib/vendas";
 
 export default function Corretores() {
   const queryClient = useQueryClient();
@@ -25,11 +26,8 @@ export default function Corretores() {
   });
 
   const { data: vendas = [] } = useQuery({
-    queryKey: ["vendas"],
-    queryFn: async () => {
-      const { data } = await supabase.from("vendas").select("corretor_id, valor, status");
-      return data || [];
-    },
+    queryKey: ["vendas-por-corretor"],
+    queryFn: () => fetchVendasPorCorretor(),
   });
 
 

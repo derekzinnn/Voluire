@@ -1,263 +1,207 @@
-import { useState, useEffect } from "react";
+import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Label } from "@/components/ui/label";
-import { useToast } from "@/hooks/use-toast";
-import { formatCurrency, formatDate } from "@/lib/format";
-import { Plus, Trash2, Pencil, Check, ChevronsUpDown } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { formatCurrency, formatDate, formatPercent } from "@/lib/format";
+import { FORMA_PAGAMENTO_LABELS } from "@/lib/vendas";
+import { useToast } from "@/hooks/use-toast";
+import { useUserRole } from "@/hooks/useUserRole";
+import { Plus, Pencil, Trash2, Receipt } from "lucide-react";
 
+const NONE = "__none__";
 const statusColors: Record<string, string> = {
   ativa: "bg-emerald-100 text-emerald-800",
   distrato: "bg-red-100 text-red-800",
   quitada: "bg-blue-100 text-blue-800",
 };
 
-const PAGE_SIZE = 15;
+type FormState = {
+  numero_contrato: string;
+  cliente_nome: string;
+  unidade: string;
+  empreendimento_id: string;
+  parceiro_id: string;
+  valor: string;
+  data_venda: string;
+  comissao_percentual_bruta: string;
+  forma_pagamento: string;
+  captador_corretor_id: string;
+  status: string;
+  observacao: string;
+  corretor1_id: string;
+  corretor1_part: string;
+  corretor2_id: string;
+  corretor2_part: string;
+  qtd_parcelas: string;
+  primeira_parcela: string;
+};
 
-function EmpreendimentoCombobox({
-  value,
-  onChange,
-  options,
-}: {
-  value: string;
-  onChange: (v: string) => void;
-  options: { id: string; nome: string }[];
-}) {
-  const [open, setOpen] = useState(false);
-  const [search, setSearch] = useState("");
-
-  return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          type="button"
-          variant="outline"
-          role="combobox"
-          aria-expanded={open}
-          className="w-full justify-between font-normal"
-        >
-          <span className={cn("truncate", !value && "text-muted-foreground")}>
-            {value || "Selecione ou digite novo"}
-          </span>
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-        <Command>
-          <CommandInput placeholder="Buscar ou criar..." value={search} onValueChange={setSearch} />
-          <CommandList className="max-h-48">
-            <CommandEmpty>
-              {search.trim() ? (
-                <button
-                  type="button"
-                  className="w-full px-2 py-1.5 text-sm text-left hover:bg-accent rounded-sm"
-                  onClick={() => {
-                    onChange(search.trim());
-                    setOpen(false);
-                  }}
-                >
-                  Criar "{search.trim()}"
-                </button>
-              ) : (
-                "Nenhum empreendimento"
-              )}
-            </CommandEmpty>
-            <CommandGroup>
-              {options.map((e) => (
-                <CommandItem
-                  key={e.id}
-                  value={e.nome}
-                  onSelect={() => {
-                    onChange(e.nome);
-                    setOpen(false);
-                  }}
-                >
-                  <Check className={cn("mr-2 h-4 w-4", value === e.nome ? "opacity-100" : "opacity-0")} />
-                  {e.nome}
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
-  );
-}
-
-const STATUS_OPTIONS = ["ativa", "distrato", "quitada"];
-
-function StatusPopover({ status, onSelect }: { status: string; onSelect: (s: string) => void }) {
-  const [open, setOpen] = useState(false);
-  return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <button type="button">
-          <Badge className={cn("cursor-pointer hover:opacity-80", statusColors[status] || "")}>{status}</Badge>
-        </button>
-      </PopoverTrigger>
-      <PopoverContent className="w-36 p-1" align="start">
-        {STATUS_OPTIONS.filter((s) => s !== status).map((s) => (
-          <button
-            key={s}
-            type="button"
-            className="w-full px-2 py-1.5 text-sm text-left rounded-sm hover:bg-accent"
-            onClick={() => {
-              onSelect(s);
-              setOpen(false);
-            }}
-          >
-            {s}
-          </button>
-        ))}
-      </PopoverContent>
-    </Popover>
-  );
-}
+const emptyForm = (): FormState => ({
+  numero_contrato: "",
+  cliente_nome: "",
+  unidade: "",
+  empreendimento_id: NONE,
+  parceiro_id: NONE,
+  valor: "",
+  data_venda: new Date().toISOString().split("T")[0],
+  comissao_percentual_bruta: "6",
+  forma_pagamento: "a_vista",
+  captador_corretor_id: NONE,
+  status: "ativa",
+  observacao: "",
+  corretor1_id: "",
+  corretor1_part: "100",
+  corretor2_id: NONE,
+  corretor2_part: "0",
+  qtd_parcelas: "1",
+  primeira_parcela: new Date().toISOString().split("T")[0],
+});
 
 export default function Vendas() {
-  const [open, setOpen] = useState(false);
-  const [editing, setEditing] = useState<any | null>(null);
-  const [editEmpreendimento, setEditEmpreendimento] = useState("");
-  const [filtroMes, setFiltroMes] = useState<string>("todos");
-  const [filtroCorretor, setFiltroCorretor] = useState<string>("todos");
-  const [filtroEmpreendimento, setFiltroEmpreendimento] = useState<string>("todos");
-  const [empreendimentoInput, setEmpreendimentoInput] = useState("");
-  const [page, setPage] = useState(1);
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { isGestor } = useUserRole();
+  const [open, setOpen] = useState(false);
+  const [editId, setEditId] = useState<string | null>(null);
+  const [form, setForm] = useState<FormState>(emptyForm());
+  const [parcelasVenda, setParcelasVenda] = useState<any | null>(null);
+  const set = (k: keyof FormState, v: string) => setForm((f) => ({ ...f, [k]: v }));
 
   const { data: vendas = [] } = useQuery({
     queryKey: ["vendas"],
     queryFn: async () => {
-      const { data } = await supabase.from("vendas").select("*, corretores(nome), empreendimentos(nome), comissoes(status)").order("data_venda", { ascending: false });
-      return data || [];
+      const { data, error } = await supabase
+        .from("vendas")
+        .select(
+          "*, empreendimentos(nome), parceiros(nome), venda_corretores(id, corretor_id, percentual_corretor, participacao_percentual, corretores(nome)), comissoes(valor_total, valor_corretores, valor_empresa, status)"
+        )
+        .order("data_venda", { ascending: false });
+      if (error) throw error;
+      return data ?? [];
     },
   });
 
   const { data: corretores = [] } = useQuery({
-    queryKey: ["corretores"],
+    queryKey: ["corretores-ativos"],
     queryFn: async () => {
-      const { data } = await supabase.from("corretores").select("*").eq("ativo", true);
-      return data || [];
+      const { data } = await supabase.from("corretores").select("id, nome, comissao_percentual").eq("ativo", true).order("nome");
+      return data ?? [];
     },
   });
 
   const { data: empreendimentos = [] } = useQuery({
     queryKey: ["empreendimentos"],
     queryFn: async () => {
-      const { data } = await supabase.from("empreendimentos").select("*");
-      return data || [];
+      const { data } = await supabase.from("empreendimentos").select("id, nome").order("nome");
+      return data ?? [];
     },
   });
 
-  const resolveEmpreendimento = async (nome: string) => {
-    const empNome = nome.trim();
-    if (!empNome) return null;
-    const existing = empreendimentos.find(e => e.nome.toLowerCase() === empNome.toLowerCase());
-    if (existing) return existing.id;
-    const { data: newEmp, error } = await supabase.from("empreendimentos").insert({ nome: empNome }).select().single();
-    if (error) throw error;
-    return newEmp.id;
-  };
-
-  const createVenda = useMutation({
-    mutationFn: async (formData: FormData) => {
-      const empreendimentoId = await resolveEmpreendimento(empreendimentoInput);
-
-      const venda = {
-        empreendimento_id: empreendimentoId,
-        unidade: formData.get("unidade") as string,
-        cliente_nome: formData.get("cliente_nome") as string,
-        corretor_id: formData.get("corretor_id") as string || null,
-        valor: Number(formData.get("valor")),
-        data_venda: formData.get("data_venda") as string,
-        roi_trafego: formData.get("roi_trafego") as string || null,
-        status: "ativa",
-      };
-      const { data, error } = await supabase.from("vendas").insert(venda).select().single();
-      if (error) throw error;
-
-      // Auto-create comissao
-      const corretor = corretores.find(c => c.id === venda.corretor_id);
-      const percentualCorretor = corretor?.comissao_percentual || 50;
-      const valorTotal = venda.valor * 0.06;
-      const valorEmpresa = valorTotal * (1 - percentualCorretor / 100);
-      const valorCorretor = valorTotal * (percentualCorretor / 100);
-
-      await supabase.from("comissoes").insert({
-        venda_id: data.id,
-        corretor_id: venda.corretor_id,
-        percentual_total: 6,
-        valor_total: valorTotal,
-        valor_empresa: valorEmpresa,
-        valor_corretor: valorCorretor,
-        status: "a_receber",
-      });
-
-      return data;
+  const { data: parceiros = [] } = useQuery({
+    queryKey: ["parceiros-ativos"],
+    queryFn: async () => {
+      const { data } = await supabase.from("parceiros").select("id, nome, tipo").eq("ativo", true).order("nome");
+      return data ?? [];
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["vendas"] });
-      queryClient.invalidateQueries({ queryKey: ["comissoes"] });
-      queryClient.invalidateQueries({ queryKey: ["corretores"] });
-      queryClient.invalidateQueries({ queryKey: ["empreendimentos"] });
-      setEmpreendimentoInput("");
-      setOpen(false);
-      toast({ title: "Venda cadastrada!" });
-    },
-    onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
   });
 
-  const updateVenda = useMutation({
-    mutationFn: async (formData: FormData) => {
-      const empreendimentoId = await resolveEmpreendimento(editEmpreendimento);
+  const { data: parcelas = [] } = useQuery({
+    queryKey: ["venda-parcelas", parcelasVenda?.id],
+    enabled: !!parcelasVenda,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("venda_parcelas")
+        .select("*")
+        .eq("venda_id", parcelasVenda.id)
+        .order("numero");
+      return data ?? [];
+    },
+  });
+
+  const salvar = useMutation({
+    mutationFn: async () => {
+      if (!form.numero_contrato.trim()) throw new Error("Informe o número do contrato.");
+      if (!form.corretor1_id) throw new Error("Selecione o corretor responsável.");
+      const p1 = Number(form.corretor1_part) || 0;
+      const p2 = form.corretor2_id !== NONE ? Number(form.corretor2_part) || 0 : 0;
+      if (form.corretor2_id !== NONE && Math.abs(p1 + p2 - 100) > 0.01)
+        throw new Error("A participação dos dois corretores deve somar 100%.");
+
       const payload = {
-        empreendimento_id: empreendimentoId,
-        unidade: formData.get("unidade") as string,
-        cliente_nome: formData.get("cliente_nome") as string,
-        corretor_id: (formData.get("corretor_id") as string) || null,
-        valor: Number(formData.get("valor")),
-        data_venda: formData.get("data_venda") as string,
-        roi_trafego: (formData.get("roi_trafego") as string) || null,
-        status: formData.get("status") as string,
+        numero_contrato: form.numero_contrato.trim(),
+        cliente_nome: form.cliente_nome,
+        unidade: form.unidade,
+        empreendimento_id: form.empreendimento_id === NONE ? null : form.empreendimento_id,
+        parceiro_id: form.parceiro_id === NONE ? null : form.parceiro_id,
+        valor: Number(form.valor),
+        data_venda: form.data_venda,
+        comissao_percentual_bruta: Number(form.comissao_percentual_bruta),
+        forma_pagamento: form.forma_pagamento,
+        captador_corretor_id: form.captador_corretor_id === NONE ? null : form.captador_corretor_id,
+        status: form.status,
+        observacao: form.observacao || null,
       };
-      const { error } = await supabase.from("vendas").update(payload).eq("id", editing.id);
-      if (error) throw error;
+
+      let vendaId = editId;
+      if (editId) {
+        const { error } = await supabase.from("vendas").update(payload).eq("id", editId);
+        if (error) throw error;
+        await supabase.from("venda_corretores").delete().eq("venda_id", editId);
+      } else {
+        const { data, error } = await supabase.from("vendas").insert([payload]).select("id").single();
+        if (error) throw error;
+        vendaId = data.id;
+      }
+
+      const pct = (id: string) => Number(corretores.find((c) => c.id === id)?.comissao_percentual) || 50;
+      const rows = [
+        { venda_id: vendaId!, corretor_id: form.corretor1_id, participacao_percentual: form.corretor2_id !== NONE ? p1 : 100, percentual_corretor: pct(form.corretor1_id) },
+      ];
+      if (form.corretor2_id !== NONE)
+        rows.push({ venda_id: vendaId!, corretor_id: form.corretor2_id, participacao_percentual: p2, percentual_corretor: pct(form.corretor2_id) });
+      const { error: vcErr } = await supabase.from("venda_corretores").insert(rows);
+      if (vcErr) throw vcErr;
+
+      // Parcelas: recriadas conforme a forma de pagamento
+      await supabase.from("venda_parcelas").delete().eq("venda_id", vendaId!);
+      const qtd = form.forma_pagamento === "a_vista" ? 1 : Math.max(1, Number(form.qtd_parcelas) || 1);
+      const valorParcela = Number(form.valor) / qtd;
+      const base = new Date(form.primeira_parcela + "T12:00:00");
+      const parcelasRows = Array.from({ length: qtd }, (_, i) => {
+        const d = new Date(base);
+        d.setMonth(d.getMonth() + i);
+        return {
+          venda_id: vendaId!,
+          numero: i + 1,
+          valor: valorParcela,
+          data_prevista: d.toISOString().split("T")[0],
+          tipo: form.forma_pagamento,
+          status: "prevista",
+        };
+      });
+      const { error: pErr } = await supabase.from("venda_parcelas").insert(parcelasRows);
+      if (pErr) throw pErr;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["vendas"] });
       queryClient.invalidateQueries({ queryKey: ["comissoes"] });
-      queryClient.invalidateQueries({ queryKey: ["empreendimentos"] });
-      setEditing(null);
-      toast({ title: "Venda atualizada!" });
+      toast({ title: editId ? "Contrato atualizado!" : "Contrato registrado!" });
+      setOpen(false);
+      setEditId(null);
+      setForm(emptyForm());
     },
     onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
   });
 
-  const updateStatus = useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: string }) => {
-      const { error } = await supabase.from("vendas").update({ status }).eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["vendas"] });
-      queryClient.invalidateQueries({ queryKey: ["comissoes"] });
-      toast({ title: "Status atualizado!" });
-    },
-    onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
-  });
-
-  const deleteVenda = useMutation({
+  const excluir = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from("vendas").delete().eq("id", id);
       if (error) throw error;
@@ -265,315 +209,350 @@ export default function Vendas() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["vendas"] });
       queryClient.invalidateQueries({ queryKey: ["comissoes"] });
-      queryClient.invalidateQueries({ queryKey: ["corretores"] });
-      toast({ title: "Venda removida" });
+      toast({ title: "Contrato excluído" });
     },
+    onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
   });
 
-  const filtered = vendas.filter(v => {
-    if (filtroMes !== "todos") {
-      const m = new Date(v.data_venda).getMonth() + 1;
-      if (m.toString() !== filtroMes) return false;
-    }
-    if (filtroCorretor !== "todos" && v.corretor_id !== filtroCorretor) return false;
-    if (filtroEmpreendimento !== "todos" && v.empreendimento_id !== filtroEmpreendimento) return false;
-    return true;
+  const atualizarParcela = useMutation({
+    mutationFn: async ({ id, patch }: { id: string; patch: any }) => {
+      const { error } = await supabase.from("venda_parcelas").update(patch).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["venda-parcelas"] });
+      queryClient.invalidateQueries({ queryKey: ["vendas"] });
+      toast({ title: "Parcela atualizada" });
+    },
+    onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
   });
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  useEffect(() => { setPage(1); }, [filtroMes, filtroCorretor, filtroEmpreendimento]);
-  useEffect(() => { if (page > totalPages) setPage(totalPages); }, [page, totalPages]);
-  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  function abrirEdicao(v: any) {
+    const parts = v.venda_corretores ?? [];
+    setEditId(v.id);
+    setForm({
+      numero_contrato: v.numero_contrato ?? "",
+      cliente_nome: v.cliente_nome ?? "",
+      unidade: v.unidade ?? "",
+      empreendimento_id: v.empreendimento_id ?? NONE,
+      parceiro_id: v.parceiro_id ?? NONE,
+      valor: String(v.valor ?? ""),
+      data_venda: v.data_venda ?? "",
+      comissao_percentual_bruta: String(v.comissao_percentual_bruta ?? "6"),
+      forma_pagamento: v.forma_pagamento ?? "a_vista",
+      captador_corretor_id: v.captador_corretor_id ?? NONE,
+      status: v.status ?? "ativa",
+      observacao: v.observacao ?? "",
+      corretor1_id: parts[0]?.corretor_id ?? "",
+      corretor1_part: String(parts[0]?.participacao_percentual ?? 100),
+      corretor2_id: parts[1]?.corretor_id ?? NONE,
+      corretor2_part: String(parts[1]?.participacao_percentual ?? 0),
+      qtd_parcelas: "1",
+      primeira_parcela: v.data_venda ?? new Date().toISOString().split("T")[0],
+    });
+    setOpen(true);
+  }
 
-  const vgvFiltrado = filtered.filter(v => v.status === "ativa").reduce((s, v) => s + Number(v.valor), 0);
-
-  const currentYear = new Date().getFullYear();
-
-  const isQuitada = (v: any) => {
-    const comissoes = (v as any).comissoes;
-    if (!comissoes || !Array.isArray(comissoes)) return false;
-    return comissoes.some((c: any) => c.status === "recebido");
-  };
-
-  const vendasAno = vendas.filter(v => {
-    const d = new Date(v.data_venda + "T12:00:00");
-    return d.getFullYear() === currentYear && v.status !== "distrato";
-  });
-
-  const vendasByQ = [0, 1, 2, 3].map(q =>
-    vendasAno.filter(v => {
-      const m = new Date(v.data_venda + "T12:00:00").getMonth();
-      return m >= q * 3 && m < (q + 1) * 3;
-    })
-  );
-
-  const currentQuarter = Math.floor(new Date().getMonth() / 3); // 0-based
-
-  const calcStats = (list: any[]) => ({
-    qtd: list.length,
-    vgv: list.reduce((s, v) => s + Number(v.valor), 0),
-    quitado: list.filter(v => isQuitada(v)).reduce((s, v) => s + Number(v.valor), 0),
-  });
-
-  const statsAno = calcStats(vendasAno);
-  const statsQ = vendasByQ.map(calcStats);
-  const triLabels = ["1º Tri", "2º Tri", "3º Tri", "4º Tri"];
-
-  const openEdit = (venda: any) => {
-    setEditing(venda);
-    setEditEmpreendimento((venda.empreendimentos as any)?.nome || "");
-  };
+  const totais = useMemo(() => {
+    const ativas = (vendas as any[]).filter((v) => v.status !== "distrato");
+    const bruto = ativas.reduce((s, v) => s + (Number(v.valor) || 0), 0);
+    const com = ativas.reduce((s, v) => s + (Number(v.comissoes?.valor_total ?? v.comissoes?.[0]?.valor_total) || 0), 0);
+    return { qtd: ativas.length, bruto, com };
+  }, [vendas]);
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex gap-2">
-          <Select value={filtroMes} onValueChange={setFiltroMes}>
-            <SelectTrigger className="w-[140px]"><SelectValue placeholder="Mês" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="todos">Todos os meses</SelectItem>
-              {Array.from({ length: 12 }, (_, i) => (
-                <SelectItem key={i + 1} value={(i + 1).toString()}>
-                  {new Date(2026, i).toLocaleString("pt-BR", { month: "long" })}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={filtroCorretor} onValueChange={setFiltroCorretor}>
-            <SelectTrigger className="w-[160px]"><SelectValue placeholder="Corretor" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="todos">Todos corretores</SelectItem>
-              {corretores.map(c => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}
-            </SelectContent>
-          </Select>
-          <Select value={filtroEmpreendimento} onValueChange={setFiltroEmpreendimento}>
-            <SelectTrigger className="w-[180px]"><SelectValue placeholder="Empreendimento" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="todos">Todos empreend.</SelectItem>
-              {empreendimentos.map(e => <SelectItem key={e.id} value={e.id}>{e.nome}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      {/* Cards do Ano - destaque */}
-      <div className="grid gap-4 grid-cols-3">
-        <Card className="border-2 border-primary/30 bg-primary/5">
-          <CardHeader className="pb-1 pt-3 px-4"><CardTitle className="text-sm text-muted-foreground">{currentYear} — Vendas</CardTitle></CardHeader>
-          <CardContent className="px-4 pb-3"><p className="text-2xl font-bold">{statsAno.qtd}</p></CardContent>
+      <div className="grid gap-4 sm:grid-cols-3">
+        <Card>
+          <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Contratos ativos</CardTitle></CardHeader>
+          <CardContent><p className="text-2xl font-bold">{totais.qtd}</p></CardContent>
         </Card>
-        <Card className="border-2 border-primary/30 bg-primary/5">
-          <CardHeader className="pb-1 pt-3 px-4"><CardTitle className="text-sm text-muted-foreground">{currentYear} — VGV</CardTitle></CardHeader>
-          <CardContent className="px-4 pb-3"><p className="text-2xl font-bold">{formatCurrency(statsAno.vgv)}</p></CardContent>
+        <Card>
+          <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Vendas brutas</CardTitle></CardHeader>
+          <CardContent><p className="text-2xl font-bold">{formatCurrency(totais.bruto)}</p></CardContent>
         </Card>
-        <Card className="border-2 border-primary/30 bg-primary/5">
-          <CardHeader className="pb-1 pt-3 px-4"><CardTitle className="text-sm text-muted-foreground">{currentYear} — Quitado</CardTitle></CardHeader>
-          <CardContent className="px-4 pb-3"><p className="text-2xl font-bold text-emerald-600">{formatCurrency(statsAno.quitado)}</p></CardContent>
+        <Card>
+          <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Comissão bruta</CardTitle></CardHeader>
+          <CardContent><p className="text-2xl font-bold">{formatCurrency(totais.com)}</p></CardContent>
         </Card>
       </div>
 
-      {/* Cards por Trimestre */}
-      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
-        {statsQ.map((s, i) => (
-          <Card key={i} className={i === currentQuarter ? "ring-2 ring-primary/40" : ""}>
-            <CardHeader className="pb-1 pt-3 px-3">
-              <CardTitle className="text-xs text-muted-foreground">{triLabels[i]}</CardTitle>
-            </CardHeader>
-            <CardContent className="px-3 pb-3 space-y-1">
-              <p className="text-sm"><span className="font-semibold">{s.qtd}</span> <span className="text-muted-foreground">{s.qtd === 1 ? "venda" : "vendas"}</span></p>
-              <p className="text-sm">VGV: <span className="font-semibold">{formatCurrency(s.vgv)}</span></p>
-              <p className="text-sm">Quitado: <span className="font-semibold text-emerald-600">{formatCurrency(s.quitado)}</span></p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      <div className="flex items-center gap-4">
-        <div className="text-sm text-muted-foreground">VGV filtrado: <span className="font-bold text-foreground">{formatCurrency(vgvFiltrado)}</span></div>
-        <Dialog open={open} onOpenChange={setOpen}>
+      {isGestor && (
+        <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) { setEditId(null); setForm(emptyForm()); } }}>
           <DialogTrigger asChild>
-            <Button><Plus className="h-4 w-4 mr-2" />Nova Venda</Button>
+            <Button><Plus className="mr-2 h-4 w-4" />Novo contrato</Button>
           </DialogTrigger>
-          <DialogContent>
-            <DialogHeader><DialogTitle>Nova Venda</DialogTitle></DialogHeader>
-            <form onSubmit={e => { e.preventDefault(); createVenda.mutate(new FormData(e.currentTarget)); }} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+          <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
+            <DialogHeader><DialogTitle>{editId ? "Editar contrato" : "Novo contrato"}</DialogTitle></DialogHeader>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Nº do contrato *</Label>
+                <Input value={form.numero_contrato} onChange={(e) => set("numero_contrato", e.target.value)} placeholder="CT-2026-001" />
+              </div>
+              <div className="space-y-2">
+                <Label>Data da venda (competência) *</Label>
+                <Input type="date" value={form.data_venda} onChange={(e) => set("data_venda", e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label>Cliente *</Label>
+                <Input value={form.cliente_nome} onChange={(e) => set("cliente_nome", e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label>Unidade *</Label>
+                <Input value={form.unidade} onChange={(e) => set("unidade", e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label>Empreendimento</Label>
+                <Select value={form.empreendimento_id} onValueChange={(v) => set("empreendimento_id", v)}>
+                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={NONE}>Sem empreendimento</SelectItem>
+                    {empreendimentos.map((e) => <SelectItem key={e.id} value={e.id}>{e.nome}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Parceiro (construtora / imobiliária)</Label>
+                <Select value={form.parceiro_id} onValueChange={(v) => set("parceiro_id", v)}>
+                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={NONE}>Sem parceiro</SelectItem>
+                    {parceiros.map((p) => <SelectItem key={p.id} value={p.id}>{p.nome}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Valor da venda (R$) *</Label>
+                <Input type="number" step="0.01" value={form.valor} onChange={(e) => set("valor", e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label>Comissão bruta (%)</Label>
+                <Input type="number" step="0.01" value={form.comissao_percentual_bruta} onChange={(e) => set("comissao_percentual_bruta", e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label>Forma de pagamento</Label>
+                <Select value={form.forma_pagamento} onValueChange={(v) => set("forma_pagamento", v)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(FORMA_PAGAMENTO_LABELS).map(([k, l]) => <SelectItem key={k} value={k}>{l}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Status</Label>
+                <Select value={form.status} onValueChange={(v) => set("status", v)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ativa">Ativa</SelectItem>
+                    <SelectItem value="quitada">Quitada</SelectItem>
+                    <SelectItem value="distrato">Distrato</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              {form.forma_pagamento !== "a_vista" && (
+                <>
+                  <div className="space-y-2">
+                    <Label>Qtd. de parcelas</Label>
+                    <Input type="number" min="1" value={form.qtd_parcelas} onChange={(e) => set("qtd_parcelas", e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>1ª parcela prevista</Label>
+                    <Input type="date" value={form.primeira_parcela} onChange={(e) => set("primeira_parcela", e.target.value)} />
+                  </div>
+                </>
+              )}
+              {form.forma_pagamento === "a_vista" && (
                 <div className="space-y-2">
-                  <Label>Empreendimento</Label>
-                  <EmpreendimentoCombobox
-                    value={empreendimentoInput}
-                    onChange={setEmpreendimentoInput}
-                    options={empreendimentos}
-                  />
+                  <Label>Recebimento previsto</Label>
+                  <Input type="date" value={form.primeira_parcela} onChange={(e) => set("primeira_parcela", e.target.value)} />
                 </div>
-                <div className="space-y-2">
-                  <Label>Unidade</Label>
-                  <Input name="unidade" required />
-                </div>
-                <div className="space-y-2">
-                  <Label>Cliente</Label>
-                  <Input name="cliente_nome" required />
-                </div>
-                <div className="space-y-2">
-                  <Label>Corretor</Label>
-                  <Select name="corretor_id">
+              )}
+              <div className="space-y-2 sm:col-span-2">
+                <Label>Corretor responsável *</Label>
+                <div className="flex gap-2">
+                  <Select value={form.corretor1_id} onValueChange={(v) => set("corretor1_id", v)}>
                     <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                     <SelectContent className="max-h-60">
-                      {corretores.map(c => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}
+                      {corretores.map((c) => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}
                     </SelectContent>
                   </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Valor (R$)</Label>
-                  <Input name="valor" type="number" step="0.01" required />
-                </div>
-                <div className="space-y-2">
-                  <Label>Data da Venda</Label>
-                  <Input name="data_venda" type="date" required />
-                </div>
-                <div className="space-y-2 col-span-2">
-                  <Label>ROI Tráfego</Label>
-                  <Input name="roi_trafego" placeholder="Ex: Facebook, Google..." />
+                  {form.corretor2_id !== NONE && (
+                    <Input className="w-28" type="number" value={form.corretor1_part} onChange={(e) => set("corretor1_part", e.target.value)} placeholder="% part." />
+                  )}
                 </div>
               </div>
-              <Button type="submit" className="w-full" disabled={createVenda.isPending}>
-                {createVenda.isPending ? "Salvando..." : "Cadastrar Venda"}
+              <div className="space-y-2 sm:col-span-2">
+                <Label>Segundo corretor (venda compartilhada)</Label>
+                <div className="flex gap-2">
+                  <Select value={form.corretor2_id} onValueChange={(v) => { set("corretor2_id", v); if (v !== NONE && Number(form.corretor2_part) === 0) { set("corretor1_part", "50"); set("corretor2_part", "50"); } }}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent className="max-h-60">
+                      <SelectItem value={NONE}>Nenhum</SelectItem>
+                      {corretores.filter((c) => c.id !== form.corretor1_id).map((c) => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                  {form.corretor2_id !== NONE && (
+                    <Input className="w-28" type="number" value={form.corretor2_part} onChange={(e) => set("corretor2_part", e.target.value)} placeholder="% part." />
+                  )}
+                </div>
+              </div>
+              <div className="space-y-2 sm:col-span-2">
+                <Label>Captador</Label>
+                <Select value={form.captador_corretor_id} onValueChange={(v) => set("captador_corretor_id", v)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent className="max-h-60">
+                    <SelectItem value={NONE}>Sem captador</SelectItem>
+                    {corretores.map((c) => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2 sm:col-span-2">
+                <Label>Observação</Label>
+                <Textarea value={form.observacao} onChange={(e) => set("observacao", e.target.value)} rows={2} />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button onClick={() => salvar.mutate()} disabled={salvar.isPending}>
+                {salvar.isPending ? "Salvando..." : "Salvar"}
               </Button>
-            </form>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
-      </div>
-
-      {/* Dialog de edição */}
-      <Dialog open={!!editing} onOpenChange={o => !o && setEditing(null)}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>Editar Venda</DialogTitle></DialogHeader>
-          {editing && (
-            <form onSubmit={e => { e.preventDefault(); updateVenda.mutate(new FormData(e.currentTarget)); }} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Empreendimento</Label>
-                  <EmpreendimentoCombobox
-                    value={editEmpreendimento}
-                    onChange={setEditEmpreendimento}
-                    options={empreendimentos}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Unidade</Label>
-                  <Input name="unidade" defaultValue={editing.unidade || ""} required />
-                </div>
-                <div className="space-y-2">
-                  <Label>Cliente</Label>
-                  <Input name="cliente_nome" defaultValue={editing.cliente_nome || ""} required />
-                </div>
-                <div className="space-y-2">
-                  <Label>Corretor</Label>
-                  <Select name="corretor_id" defaultValue={editing.corretor_id || undefined}>
-                    <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                    <SelectContent className="max-h-60">
-                      {corretores.map(c => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Valor (R$)</Label>
-                  <Input name="valor" type="number" step="0.01" defaultValue={editing.valor} required />
-                </div>
-                <div className="space-y-2">
-                  <Label>Data da Venda</Label>
-                  <Input name="data_venda" type="date" defaultValue={editing.data_venda} required />
-                </div>
-                <div className="space-y-2">
-                  <Label>Status</Label>
-                  <Select name="status" defaultValue={editing.status}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="ativa">ativa</SelectItem>
-                      <SelectItem value="distrato">distrato</SelectItem>
-                      <SelectItem value="quitada">quitada</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>ROI Tráfego</Label>
-                  <Input name="roi_trafego" defaultValue={editing.roi_trafego || ""} placeholder="Ex: Facebook, Google..." />
-                </div>
-              </div>
-              <Button type="submit" className="w-full" disabled={updateVenda.isPending}>
-                {updateVenda.isPending ? "Salvando..." : "Salvar alterações"}
-              </Button>
-            </form>
-          )}
-        </DialogContent>
-      </Dialog>
+      )}
 
       <Card>
-        <CardContent className="p-0">
+        <CardContent className="p-0 overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Data</TableHead>
+                <TableHead>Contrato</TableHead>
+                <TableHead>Cliente / Unidade</TableHead>
                 <TableHead>Empreendimento</TableHead>
-                <TableHead>Unidade</TableHead>
-                <TableHead>Cliente</TableHead>
-                <TableHead>Corretor</TableHead>
+                <TableHead>Parceiro</TableHead>
+                <TableHead>Corretores</TableHead>
                 <TableHead>Valor</TableHead>
+                <TableHead>Pagamento</TableHead>
+                <TableHead>Data</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead></TableHead>
+                <TableHead className="text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {paginated.map(venda => (
-                <TableRow key={venda.id}>
-                  <TableCell>{formatDate(venda.data_venda)}</TableCell>
-                  <TableCell>{(venda.empreendimentos as any)?.nome || "—"}</TableCell>
-                  <TableCell>{venda.unidade}</TableCell>
-                  <TableCell>{venda.cliente_nome}</TableCell>
-                  <TableCell>{(venda.corretores as any)?.nome || "—"}</TableCell>
-                  <TableCell className="font-medium">{formatCurrency(Number(venda.valor))}</TableCell>
+              {(vendas as any[]).map((v) => (
+                <TableRow key={v.id}>
+                  <TableCell className="font-mono text-xs">{v.numero_contrato}</TableCell>
                   <TableCell>
-                    <StatusPopover
-                      status={venda.status}
-                      onSelect={(s) => updateStatus.mutate({ id: venda.id, status: s })}
-                    />
+                    <div className="font-medium">{v.cliente_nome}</div>
+                    <div className="text-xs text-muted-foreground">Un. {v.unidade}</div>
                   </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-1">
-                      <Button variant="ghost" size="icon" onClick={() => openEdit(venda)}>
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" onClick={() => deleteVenda.mutate(venda.id)}>
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </div>
+                  <TableCell>{v.empreendimentos?.nome ?? "—"}</TableCell>
+                  <TableCell>{v.parceiros?.nome ?? "—"}</TableCell>
+                  <TableCell className="text-sm">
+                    {(v.venda_corretores ?? []).map((p: any) => (
+                      <div key={p.id} className="whitespace-nowrap">
+                        {p.corretores?.nome}
+                        <span className="ml-1 text-xs text-muted-foreground">
+                          {formatPercent(Number(p.percentual_corretor))}
+                          {Number(p.participacao_percentual) !== 100 ? ` · ${formatPercent(Number(p.participacao_percentual))}` : ""}
+                        </span>
+                      </div>
+                    ))}
+                  </TableCell>
+                  <TableCell className="font-medium">{formatCurrency(Number(v.valor))}</TableCell>
+                  <TableCell>{FORMA_PAGAMENTO_LABELS[v.forma_pagamento] ?? v.forma_pagamento}</TableCell>
+                  <TableCell>{formatDate(v.data_venda)}</TableCell>
+                  <TableCell><Badge className={statusColors[v.status]}>{v.status}</Badge></TableCell>
+                  <TableCell className="text-right whitespace-nowrap">
+                    <Button variant="ghost" size="icon" onClick={() => setParcelasVenda(v)} title="Parcelas">
+                      <Receipt className="h-4 w-4" />
+                    </Button>
+                    {isGestor && (
+                      <>
+                        <Button variant="ghost" size="icon" onClick={() => abrirEdicao(v)}><Pencil className="h-4 w-4" /></Button>
+                        <Button variant="ghost" size="icon" onClick={() => { if (confirm("Excluir este contrato?")) excluir.mutate(v.id); }}>
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </>
+                    )}
                   </TableCell>
                 </TableRow>
               ))}
-              {filtered.length === 0 && (
-                <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">Nenhuma venda encontrada</TableCell></TableRow>
+              {vendas.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={10} className="py-8 text-center text-muted-foreground">Nenhum contrato registrado</TableCell>
+                </TableRow>
               )}
             </TableBody>
           </Table>
         </CardContent>
       </Card>
 
-      {filtered.length > 0 && (
-        <div className="flex items-center justify-between gap-4">
-          <p className="text-sm text-muted-foreground">
-            Mostrando {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, filtered.length)} de {filtered.length}
-          </p>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>
-              Anterior
-            </Button>
-            <span className="text-sm">Página {page} de {totalPages}</span>
-            <Button variant="outline" size="sm" onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}>
-              Próxima
-            </Button>
-          </div>
-        </div>
-      )}
+      <Dialog open={!!parcelasVenda} onOpenChange={(o) => !o && setParcelasVenda(null)}>
+        <DialogContent className="max-h-[85vh] max-w-2xl overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Fluxo de caixa — contrato {parcelasVenda?.numero_contrato}</DialogTitle>
+          </DialogHeader>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>#</TableHead>
+                <TableHead>Valor</TableHead>
+                <TableHead>Prevista</TableHead>
+                <TableHead>Recebida</TableHead>
+                <TableHead>Adiada</TableHead>
+                <TableHead>Ação</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {(parcelas as any[]).map((p) => (
+                <TableRow key={p.id}>
+                  <TableCell>{p.numero}</TableCell>
+                  <TableCell>{formatCurrency(Number(p.valor))}</TableCell>
+                  <TableCell>{formatDate(p.data_prevista)}</TableCell>
+                  <TableCell>{p.data_recebimento ? formatDate(p.data_recebimento) : "—"}</TableCell>
+                  <TableCell>{p.dias_adiados ? `${p.dias_adiados} dias` : "—"}</TableCell>
+                  <TableCell className="whitespace-nowrap">
+                    {isGestor && p.status !== "recebida" && (
+                      <>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() =>
+                            atualizarParcela.mutate({
+                              id: p.id,
+                              patch: { status: "recebida", data_recebimento: new Date().toISOString().split("T")[0] },
+                            })
+                          }
+                        >
+                          Receber
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            const d = new Date(p.data_prevista + "T12:00:00");
+                            d.setDate(d.getDate() + 30);
+                            atualizarParcela.mutate({
+                              id: p.id,
+                              patch: { data_prevista: d.toISOString().split("T")[0], dias_adiados: (p.dias_adiados || 0) + 30, status: "adiada" },
+                            });
+                          }}
+                        >
+                          Adiar 30d
+                        </Button>
+                      </>
+                    )}
+                    {p.status === "recebida" && <Badge className="bg-emerald-100 text-emerald-800">Recebida</Badge>}
+                  </TableCell>
+                </TableRow>
+              ))}
+              {parcelas.length === 0 && (
+                <TableRow><TableCell colSpan={6} className="py-6 text-center text-muted-foreground">Sem parcelas</TableCell></TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

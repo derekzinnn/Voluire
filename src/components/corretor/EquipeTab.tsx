@@ -100,13 +100,13 @@ export default function EquipeTab({ corretorId, equipeId, splitAtual, podeGerenc
     },
   });
 
-  // Histórico: cada comissão guarda o split aplicado no momento da venda.
-  const { data: comissoes = [] } = useQuery({
+  // Histórico: cada participação de venda guarda o split aplicado no momento da venda.
+  const { data: participacoes = [] } = useQuery({
     queryKey: ["corretor-splits", corretorId],
     queryFn: async () => {
       const { data } = await supabase
-        .from("comissoes")
-        .select("id, valor_total, valor_corretor, valor_empresa, status, vendas(cliente_nome, data_venda, valor)")
+        .from("venda_corretores")
+        .select("id, percentual_corretor, participacao_percentual, vendas(cliente_nome, data_venda, valor, comissao_percentual_bruta, numero_contrato, comissoes(status))")
         .eq("corretor_id", corretorId)
         .order("created_at", { ascending: false })
         .limit(20);
@@ -251,34 +251,42 @@ export default function EquipeTab({ corretorId, equipeId, splitAtual, podeGerenc
               <TableRow>
                 <TableHead>Cliente</TableHead>
                 <TableHead>Data</TableHead>
-                <TableHead>Comissão total</TableHead>
+                <TableHead>Contrato</TableHead>
+                <TableHead>Comissão bruta</TableHead>
                 <TableHead>Split aplicado</TableHead>
+                <TableHead>Participação</TableHead>
                 <TableHead>Corretor</TableHead>
                 <TableHead>Status</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {comissoes.map((c: any) => {
-                const total = Number(c.valor_total) || 0;
-                const pct = total > 0 ? (Number(c.valor_corretor) / total) * 100 : 0;
+              {participacoes.map((c: any) => {
+                const venda = c.vendas;
+                const total = (Number(venda?.valor) || 0) * (Number(venda?.comissao_percentual_bruta) || 0) / 100;
+                const pct = Number(c.percentual_corretor) || 0;
+                const part = Number(c.participacao_percentual) || 100;
+                const valorCorretor = total * pct / 100 * part / 100;
+                const status = venda?.comissoes?.status ?? venda?.comissoes?.[0]?.status;
                 return (
                   <TableRow key={c.id}>
-                    <TableCell>{c.vendas?.cliente_nome ?? "—"}</TableCell>
-                    <TableCell>{c.vendas?.data_venda ? formatDate(c.vendas.data_venda) : "—"}</TableCell>
+                    <TableCell>{venda?.cliente_nome ?? "—"}</TableCell>
+                    <TableCell>{venda?.data_venda ? formatDate(venda.data_venda) : "—"}</TableCell>
+                    <TableCell className="text-muted-foreground">{venda?.numero_contrato ?? "—"}</TableCell>
                     <TableCell>{formatCurrency(total)}</TableCell>
                     <TableCell>{formatPercent(pct)}</TableCell>
-                    <TableCell>{formatCurrency(Number(c.valor_corretor))}</TableCell>
+                    <TableCell>{formatPercent(part)}</TableCell>
+                    <TableCell>{formatCurrency(valorCorretor)}</TableCell>
                     <TableCell>
-                      <Badge variant={c.status === "recebido" ? "default" : "secondary"}>
-                        {c.status === "recebido" ? "Recebido" : "A receber"}
+                      <Badge variant={status === "recebido" ? "default" : "secondary"}>
+                        {status === "recebido" ? "Recebido" : "A receber"}
                       </Badge>
                     </TableCell>
                   </TableRow>
                 );
               })}
-              {comissoes.length === 0 && (
+              {participacoes.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={6} className="py-8 text-center text-muted-foreground">
+                  <TableCell colSpan={8} className="py-8 text-center text-muted-foreground">
                     Nenhuma comissão gerada para este corretor.
                   </TableCell>
                 </TableRow>

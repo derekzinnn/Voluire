@@ -10,6 +10,7 @@ import ResetPassword from "@/pages/ResetPassword";
 import Dashboard from "@/pages/Dashboard";
 import Vendas from "@/pages/Vendas";
 import Corretores from "@/pages/Corretores";
+import Parceiros from "@/pages/Parceiros";
 import CorretorDetalhe from "@/pages/CorretorDetalhe";
 import Comissoes from "@/pages/Comissoes";
 import Financeiro from "@/pages/Financeiro";
@@ -49,6 +50,7 @@ function AppRoutes() {
         <Route path="/vendas" element={<Vendas />} />
         <Route path="/corretores" element={<Corretores />} />
         <Route path="/corretores/:id" element={<CorretorDetalhe />} />
+        <Route path="/parceiros" element={<Parceiros />} />
         <Route path="/comissoes" element={<Comissoes />} />
         <Route path="/financeiro" element={<Financeiro />} />
         <Route path="/metas" element={<Metas />} />

@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchVendasPorCorretor } from "@/lib/vendas";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
@@ -25,13 +26,8 @@ export default function DesempenhoTab({ corretorId }: { corretorId: string }) {
   const { data: vendas = [] } = useQuery({
     queryKey: ["desempenho-vendas", corretorId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("vendas")
-        .select("id, valor, data_venda, status")
-        .eq("corretor_id", corretorId)
-        .neq("status", "distrato");
-      if (error) throw error;
-      return data ?? [];
+      const rows = await fetchVendasPorCorretor([corretorId]);
+      return rows.filter((v) => v.status !== "distrato");
     },
   });
 

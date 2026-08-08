@@ -3,7 +3,7 @@ import { Link, useLocation, Navigate } from "react-router-dom";
 import logo from "@/assets/logo.jpg";
 import {
   LayoutDashboard, ShoppingCart, Users, DollarSign, 
-  Wallet, Target, Megaphone, Menu, X, LogOut, Trophy, Settings, UsersRound
+  Wallet, Target, Megaphone, Menu, X, LogOut, Trophy, Settings, UsersRound, Building2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,6 +15,7 @@ const navItems = [
   { to: "/", icon: LayoutDashboard, label: "Dashboard" },
   { to: "/vendas", icon: ShoppingCart, label: "Vendas" },
   { to: "/corretores", icon: Users, label: "Corretores" },
+  { to: "/parceiros", icon: Building2, label: "Parceiros" },
   { to: "/comissoes", icon: DollarSign, label: "Comissões" },
   { to: "/financeiro", icon: Wallet, label: "Financeiro" },
   { to: "/metas", icon: Target, label: "Metas" },

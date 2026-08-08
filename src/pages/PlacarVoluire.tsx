@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchVendasPorCorretor } from "@/lib/vendas";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -90,8 +91,8 @@ export default function PlacarVoluire() {
   const { data: vendas = [] } = useQuery({
     queryKey: ["vendas"],
     queryFn: async () => {
-      const { data } = await supabase.from("vendas").select("valor, data_venda, corretor_id, status").neq("status", "distrato");
-      return data || [];
+      const rows = await fetchVendasPorCorretor();
+      return rows.filter((v) => v.status !== "distrato");
     },
   });
 
