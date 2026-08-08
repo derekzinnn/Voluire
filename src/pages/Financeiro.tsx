@@ -105,16 +105,22 @@ export default function Financeiro() {
   const totalDespesasAno = fluxoMensal.reduce((s, f) => s + f.despesas, 0);
   const saldoAno = totalFaturamentoAno - totalDespesasAno;
 
-  // === Mês Gerencial (Competência): receita = comissão da empresa pela data_venda, despesa = mes lançado ===
+  // === Mês Gerencial (Competência) ===
+  // Toda venda entra INTEGRALMENTE no mês em que foi vendida, mesmo parcelada/financiada.
+  const comissoesPorMes = (i: number) =>
+    comissoes.filter(c => {
+      const venda = (c as any).vendas;
+      if (!venda || venda.status === "distrato") return false;
+      const d = parseLocalDate(venda.data_venda);
+      return d?.getMonth() === i && d.getFullYear() === currentYear;
+    });
+
   const competenciaMensal = MESES.map((mes, i) => {
-    const receita = comissoes
-      .filter(c => {
-        const venda = (c as any).vendas;
-        if (!venda || venda.status === "distrato") return false;
-        const d = parseLocalDate(venda.data_venda);
-        return d?.getMonth() === i && d.getFullYear() === currentYear;
-      })
-      .reduce((s, c) => s + Number(c.valor_empresa), 0);
+    const doMes = comissoesPorMes(i);
+    const vgv = doMes.reduce((s, c) => s + (Number((c as any).vendas?.valor) || 0), 0);
+    const comissaoBruta = doMes.reduce((s, c) => s + Number((c as any).valor_total || 0), 0);
+    const corretores = doMes.reduce((s, c) => s + Number((c as any).valor_corretores || 0), 0);
+    const receita = doMes.reduce((s, c) => s + Number(c.valor_empresa), 0);
 
     const despesasMes = despesas
       .filter(d => d.mes === i + 1)
@@ -122,6 +128,11 @@ export default function Financeiro() {
 
     return {
       mes: mes.substring(0, 3),
+      mesIndex: i,
+      qtd: doMes.length,
+      vgv,
+      comissaoBruta,
+      corretores,
       receita,
       despesas: despesasMes,
       resultado: receita - despesasMes,
@@ -135,7 +146,12 @@ export default function Financeiro() {
   });
 
   const totalReceitaCompAno = competenciaMensal.reduce((s, f) => s + f.receita, 0);
+  const totalVgvCompAno = competenciaMensal.reduce((s, f) => s + f.vgv, 0);
+  const totalComissaoBrutaAno = competenciaMensal.reduce((s, f) => s + f.comissaoBruta, 0);
+  const totalCorretoresAno = competenciaMensal.reduce((s, f) => s + f.corretores, 0);
   const resultadoCompAno = totalReceitaCompAno - totalDespesasAno;
+
+  const contratosDoMesGerencial = comissoesPorMes(Number(mesGerencial) - 1);
 
   const DespesaTable = ({ items }: { items: typeof despesas }) => (
     <Table>
