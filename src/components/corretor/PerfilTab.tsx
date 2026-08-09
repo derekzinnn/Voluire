@@ -19,12 +19,7 @@ interface Props {
 }
 
 
-const DISC = [
-  { key: "disc_dominancia", label: "Dominância (D)" },
-  { key: "disc_influencia", label: "Influência (I)" },
-  { key: "disc_estabilidade", label: "Estabilidade (S)" },
-  { key: "disc_conformidade", label: "Conformidade (C)" },
-] as const;
+
 
 export default function PerfilTab({ corretorId, perfil, podeGerenciar, isDiretor = false }: Props) {
   const queryClient = useQueryClient();
@@ -128,10 +123,6 @@ export default function PerfilTab({ corretorId, perfil, podeGerenciar, isDiretor
       telefone_pessoal: txt("telefone_pessoal"),
       email_pessoal: txt("email_pessoal"),
       creci: txt("creci"),
-      disc_dominancia: num("disc_dominancia"),
-      disc_influencia: num("disc_influencia"),
-      disc_estabilidade: num("disc_estabilidade"),
-      disc_conformidade: num("disc_conformidade"),
     });
     // CPF vive em tabela protegida; só a diretoria enxerga e grava o valor real.
     if (isDiretor) {
@@ -199,25 +190,8 @@ export default function PerfilTab({ corretorId, perfil, podeGerenciar, isDiretor
 
             </div>
 
-            <div>
-              <p className="mb-3 text-sm font-medium">Perfil comportamental (DISC)</p>
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                {DISC.map((d) => (
-                  <div key={d.key} className="space-y-2">
-                    <Label>{d.label}</Label>
-                    <Input
-                      type="number"
-                      min={0}
-                      max={100}
-                      name={d.key}
-                      defaultValue={perfil?.[d.key] ?? ""}
-                      disabled={readOnly}
-                      placeholder="0 a 100"
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
+
+
 
             {podeGerenciar && (
               <div className="flex flex-wrap items-center gap-3">
