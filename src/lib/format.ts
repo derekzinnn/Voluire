@@ -33,6 +33,29 @@ export function onlyDigits(value: string): string {
 }
 
 /**
+ * Máscara de moeda para input: digita-se em centavos e exibe 1.234.567,89.
+ */
+export function formatCurrencyInput(value: string): string {
+  const d = onlyDigits(value);
+  if (!d) return "";
+  const n = Number(d) / 100;
+  return n.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+/** Converte o valor numérico (string) para a máscara de moeda de input. */
+export function numberToCurrencyInput(value: string | number): string {
+  const n = Number(value);
+  if (!value || Number.isNaN(n)) return "";
+  return n.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+/** Extrai o número a partir da máscara de moeda de input. */
+export function parseCurrencyInput(value: string): number {
+  const d = onlyDigits(value);
+  return d ? Number(d) / 100 : 0;
+}
+
+/**
  * Formata uma string como CPF: 000.000.000-00.
  * Limita a 11 dígitos. Retorna a string formatada (parcial enquanto digita).
  */
