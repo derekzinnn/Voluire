@@ -57,8 +57,10 @@ export default function Dashboard() {
     [resumo]
   );
 
-  const chartData = resumo.map((r) => ({
+  const pctQuitado =
+    totais.vgv > 0 ? `${((totais.vgv_quitado / totais.vgv) * 100).toFixed(1)}%` : "—";
 
+  const chartData = resumo.map((r) => ({
     mes: MESES[r.mes - 1].substring(0, 3),
     corretores: r.corretores,
     gestores: r.gestores,
