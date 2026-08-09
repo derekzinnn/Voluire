@@ -11,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatCurrency, formatDate, formatPercent } from "@/lib/format";
-import { FORMA_PAGAMENTO_LABELS } from "@/lib/vendas";
+import { FORMA_PAGAMENTO_LABELS, EMPREENDIMENTO_TIPO_LABELS } from "@/lib/vendas";
 import { useToast } from "@/hooks/use-toast";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Plus, Pencil, Trash2, Receipt } from "lucide-react";
@@ -97,6 +97,10 @@ export default function Vendas() {
 
   const totalParcelas = parcelasEdit.reduce((s, p) => s + (Number(p.valor) || 0), 0);
 
+  const empSelecionado = empreendimentos.find((e: any) => e.id === form.empreendimento_id) as any;
+  const isPronto = empSelecionado?.tipo === "pronto";
+  const comissaoBruta = (Number(form.valor) || 0) * 0.06;
+
   const { data: vendas = [] } = useQuery({
     queryKey: ["vendas"],
     queryFn: async () => {
@@ -122,7 +126,7 @@ export default function Vendas() {
   const { data: empreendimentos = [] } = useQuery({
     queryKey: ["empreendimentos"],
     queryFn: async () => {
-      const { data } = await supabase.from("empreendimentos").select("id, nome").order("nome");
+      const { data } = await supabase.from("empreendimentos").select("id, nome, tipo").order("nome");
       return data ?? [];
     },
   });
