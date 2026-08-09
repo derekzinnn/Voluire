@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Check, Copy, UserPlus } from "lucide-react";
-import { formatCPF } from "@/lib/format";
+import { formatCPF, formatPhone } from "@/lib/format";
 
 const SEM_EQUIPE = "__sem_equipe__";
 const NOVO_CORRETOR = "__novo__";
@@ -213,7 +213,14 @@ export default function CadastroUnificadoDialog({ triggerLabel = "Cadastrar usu√
               </div>
               <div className="space-y-2">
                 <Label>Telefone</Label>
-                <Input name="telefone_pessoal" maxLength={20} placeholder="(51) 90000-0000" />
+                <Input
+                  name="telefone_pessoal"
+                  maxLength={15}
+                  placeholder="(51) 90000-0000"
+                  onChange={(e) => {
+                    e.target.value = formatPhone(e.target.value);
+                  }}
+                />
               </div>
               <div className="space-y-2">
                 <Label>E-mail pessoal</Label>

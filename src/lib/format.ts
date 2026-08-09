@@ -43,3 +43,15 @@ export function formatCPF(value: string): string {
     .replace(/(\d{3})(\d)/, "$1.$2")
     .replace(/(\d{3})(\d{1,2})$/, "$1-$2");
 }
+
+/**
+ * Formata uma string como telefone brasileiro: (51) 90000-0000.
+ * Limita a 11 dígitos. Retorna a string formatada (parcial enquanto digita).
+ */
+export function formatPhone(value: string): string {
+  const d = onlyDigits(value).slice(0, 11);
+  if (d.length <= 2) return d;
+  if (d.length <= 6) return `(${d.slice(0, 2)}) ${d.slice(2)}`;
+  if (d.length <= 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
+  return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
+}
