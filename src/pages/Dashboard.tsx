@@ -34,6 +34,7 @@ export default function Dashboard() {
   const anoAtual = new Date().getFullYear();
   const { role, isGestor, loading: roleLoading } = useUserRole();
   const [anoSel, setAnoSel] = useState(anoAtual);
+  const [popupCat, setPopupCat] = useState<CategoriaPopup | null>(null);
 
   const { data: resumo = [] } = useQuery({
     queryKey: ["resumo-dashboard", anoSel],
