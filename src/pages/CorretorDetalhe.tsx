@@ -11,7 +11,7 @@ import { formatPercent } from "@/lib/format";
 import { useUserRole } from "@/hooks/useUserRole";
 import PerfilTab from "@/components/corretor/PerfilTab";
 import EquipeTab from "@/components/corretor/EquipeTab";
-import DesenvolvimentoTab from "@/components/corretor/DesenvolvimentoTab";
+
 import DesempenhoTab from "@/components/corretor/DesempenhoTab";
 import { useFotoUrl } from "@/components/corretor/useFotoUrl";
 
@@ -130,7 +130,7 @@ export default function CorretorDetalhe() {
         <TabsList className="flex-wrap">
           <TabsTrigger value="ficha">Ficha</TabsTrigger>
           <TabsTrigger value="equipe">Equipe</TabsTrigger>
-          <TabsTrigger value="desenvolvimento">Desenvolvimento</TabsTrigger>
+          
           <TabsTrigger value="desempenho">Desempenho</TabsTrigger>
         </TabsList>
 
@@ -151,9 +151,6 @@ export default function CorretorDetalhe() {
             podeGerenciar={podeGerenciar}
           />
 
-        </TabsContent>
-        <TabsContent value="desenvolvimento" className="mt-4">
-          <DesenvolvimentoTab corretorId={id} podeGerenciar={podeGerenciar} />
         </TabsContent>
         <TabsContent value="desempenho" className="mt-4">
           <DesempenhoTab corretorId={id} />
