@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 import { formatCurrency, MESES } from "@/lib/format";
-import { TrendingUp, Users, Briefcase, Building2 } from "lucide-react";
+import { TrendingUp, Users, Briefcase, Building2, CheckCircle2 } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis, Legend } from "recharts";
 import { useUserRole } from "@/hooks/useUserRole";
 
@@ -58,6 +58,7 @@ export default function Dashboard() {
   );
 
   const chartData = resumo.map((r) => ({
+
     mes: MESES[r.mes - 1].substring(0, 3),
     corretores: r.corretores,
     gestores: r.gestores,
