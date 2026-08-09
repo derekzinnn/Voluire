@@ -11,6 +11,7 @@ import Dashboard from "@/pages/Dashboard";
 import Vendas from "@/pages/Vendas";
 import Corretores from "@/pages/Corretores";
 import Parceiros from "@/pages/Parceiros";
+import Empreendimentos from "@/pages/Empreendimentos";
 import CorretorDetalhe from "@/pages/CorretorDetalhe";
 import Financeiro from "@/pages/Financeiro";
 import GestaoUsuarios from "@/pages/GestaoUsuarios";
@@ -47,6 +48,7 @@ function AppRoutes() {
         <Route path="/corretores" element={<Corretores />} />
         <Route path="/corretores/:id" element={<CorretorDetalhe />} />
         <Route path="/parceiros" element={<Parceiros />} />
+        <Route path="/empreendimentos" element={<Empreendimentos />} />
         <Route path="/financeiro" element={<Financeiro />} />
         <Route path="/minha-equipe" element={<MinhaEquipe />} />
         <Route path="/gestao-usuarios" element={<GestaoUsuarios />} />
