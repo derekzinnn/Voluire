@@ -512,7 +512,7 @@ export default function Vendas() {
                 </div>
               </div>
               <div className="space-y-2 sm:col-span-2">
-                <Label>Captador</Label>
+                <Label>{isPronto ? "Agenciador (captador) — 10%" : "Captador"}</Label>
                 <Select value={form.captador_corretor_id} onValueChange={(v) => set("captador_corretor_id", v)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent className="max-h-60">
