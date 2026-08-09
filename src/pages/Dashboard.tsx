@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 import { formatCurrency, MESES } from "@/lib/format";
 import { TrendingUp, Users, Briefcase, Building2, CheckCircle2 } from "lucide-react";
@@ -20,6 +21,14 @@ interface ResumoMes {
   voluire: number;
   qtd_vendas: number;
 }
+
+type CategoriaPopup = "corretores" | "gestores" | "voluire";
+
+const CATEGORIA_INFO: Record<CategoriaPopup, { titulo: string; cor: string; descricao: string }> = {
+  corretores: { titulo: "Corretores", cor: "text-emerald-600", descricao: "Repasse de comissão aos corretores" },
+  gestores: { titulo: "Gestores", cor: "text-amber-600", descricao: "Comissão de gestão das equipes" },
+  voluire: { titulo: "Voluire", cor: "text-primary", descricao: "Receita líquida da empresa" },
+};
 
 export default function Dashboard() {
   const anoAtual = new Date().getFullYear();
