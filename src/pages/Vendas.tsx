@@ -340,9 +340,18 @@ export default function Vendas() {
                   <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value={NONE}>Sem empreendimento</SelectItem>
-                    {empreendimentos.map((e) => <SelectItem key={e.id} value={e.id}>{e.nome}</SelectItem>)}
+                    {(empreendimentos as any[]).map((e) => (
+                      <SelectItem key={e.id} value={e.id}>
+                        {e.nome} · {EMPREENDIMENTO_TIPO_LABELS[e.tipo] ?? e.tipo}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
+                {isPronto && (
+                  <p className="text-xs text-muted-foreground">
+                    Imóvel pronto: agenciador 10% ({formatCurrency(comissaoBruta * 0.1)}) e vendedor 40% ({formatCurrency(comissaoBruta * 0.4)}) da comissão bruta.
+                  </p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label>Parceiro (construtora / imobiliária)</Label>
