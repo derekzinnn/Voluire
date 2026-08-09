@@ -22,11 +22,14 @@ export default function Financeiro() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const currentYear = new Date().getFullYear();
+  const [ano, setAno] = useState<string>(currentYear.toString());
+  const anoNum = Number(ano);
+  const anosDisponiveis = Array.from({ length: 5 }, (_, i) => currentYear + 1 - i);
 
   const { data: despesas = [] } = useQuery({
-    queryKey: ["despesas"],
+    queryKey: ["despesas", anoNum],
     queryFn: async () => {
-      const { data } = await supabase.from("despesas").select("*").eq("ano", currentYear).order("mes").order("categoria");
+      const { data } = await supabase.from("despesas").select("*").eq("ano", anoNum).order("mes").order("categoria");
       return data || [];
     },
   });
@@ -48,7 +51,7 @@ export default function Financeiro() {
         descricao: formData.get("descricao") as string || null,
         valor: Number(formData.get("valor")),
         mes: Number(formData.get("mes")),
-        ano: currentYear,
+        ano: anoNum,
         tipo: formData.get("tipo") as string,
       });
       if (error) throw error;
@@ -81,7 +84,7 @@ export default function Financeiro() {
       .filter(c => {
         if (c.status !== "recebido" || !c.data_recebimento) return false;
         const d = parseLocalDate(c.data_recebimento);
-        return d?.getMonth() === i && d.getFullYear() === currentYear;
+        return d?.getMonth() === i && d.getFullYear() === anoNum;
       })
       .reduce((s, c) => s + Number(c.valor_empresa), 0);
 
@@ -114,7 +117,7 @@ export default function Financeiro() {
       const venda = (c as any).vendas;
       if (!venda || venda.status === "distrato") return false;
       const d = parseLocalDate(venda.data_venda);
-      return d?.getMonth() === i && d.getFullYear() === currentYear;
+      return d?.getMonth() === i && d.getFullYear() === anoNum;
     });
 
   const competenciaMensal = MESES.map((mes, i) => {
@@ -154,6 +157,9 @@ export default function Financeiro() {
   const resultadoCompAno = totalReceitaCompAno - totalDespesasAno;
 
   const contratosDoMesGerencial = comissoesPorMes(Number(mesGerencial) - 1);
+  const mesSel = competenciaMensal[Number(mesGerencial) - 1] ?? {
+    qtd: 0, vgv: 0, comissaoBruta: 0, corretores: 0, receita: 0, despesas: 0, resultado: 0,
+  };
 
   const DespesaTable = ({ items }: { items: typeof despesas }) => (
     <Table>
