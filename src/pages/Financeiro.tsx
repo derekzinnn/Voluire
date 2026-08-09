@@ -88,18 +88,9 @@ export default function Financeiro() {
   const filteredEmpresa = despesas.filter(d => d.tipo === "empresa" && d.mes.toString() === filtroMes);
   const totalEmpresa = filteredEmpresa.reduce((s, d) => s + Number(d.valor), 0);
 
-  // === Fluxo de Caixa: entradas efetivadas x Despesas ===
-  // A receita da Voluire entra proporcionalmente a cada parcela recebida.
+  // === Fluxo de Caixa: entradas efetivadas (valor total) x Despesas ===
+  // Cada parcela recebida entra com seu valor integral no mês do recebimento.
   // Vendas sem parcelas cadastradas usam a data de recebimento da comissão.
-  const comissaoPorVenda = new Map<string, { empresa: number; vendaValor: number }>();
-  comissoes.forEach((c: any) => {
-    if (c.vendas?.id) {
-      comissaoPorVenda.set(c.vendas.id, {
-        empresa: Number(c.valor_empresa || 0),
-        vendaValor: Number(c.vendas.valor || 0),
-      });
-    }
-  });
   const vendasComParcelas = new Set(parcelas.map((p: any) => p.venda_id));
 
   const fluxoMensal = MESES.map((mes, i) => {
@@ -110,11 +101,7 @@ export default function Financeiro() {
         const d = parseLocalDate(p.data_recebimento);
         return d?.getMonth() === i && d.getFullYear() === anoNum;
       })
-      .reduce((s: number, p: any) => {
-        const info = comissaoPorVenda.get(p.venda_id);
-        if (!info || !info.vendaValor) return s;
-        return s + info.empresa * (Number(p.valor) / info.vendaValor);
-      }, 0);
+      .reduce((s: number, p: any) => s + Number(p.valor), 0);
 
     const porComissao = comissoes
       .filter((c: any) => {
@@ -123,7 +110,7 @@ export default function Financeiro() {
         const d = parseLocalDate(c.data_recebimento);
         return d?.getMonth() === i && d.getFullYear() === anoNum;
       })
-      .reduce((s: number, c: any) => s + Number(c.valor_empresa), 0);
+      .reduce((s: number, c: any) => s + Number(c.valor_total), 0);
 
     const faturamento = porParcelas + porComissao;
 
@@ -240,14 +227,14 @@ export default function Financeiro() {
 
         <TabsContent value="caixa" className="space-y-6 mt-6">
           <p className="text-sm text-muted-foreground">
-            Considera a receita da Voluire <strong>efetivamente recebida</strong>: cada <strong>parcela quitada</strong> entra no mês do recebimento, proporcional ao valor do contrato. Vendas sem parcelas usam a data de recebimento da comissão. Despesas pelo mês lançado.
+            Considera o <strong>valor total efetivamente recebido</strong>: cada <strong>parcela quitada</strong> entra no mês do recebimento com seu valor integral. Vendas sem parcelas usam a data de recebimento da comissão. Despesas pelo mês lançado.
           </p>
 
           {/* Cards resumo do ano */}
           <div className="grid gap-4 sm:grid-cols-3">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm text-muted-foreground">Faturamento {ano}</CardTitle>
+                <CardTitle className="text-sm text-muted-foreground">Entradas {ano}</CardTitle>
                 <TrendingUp className="h-5 w-5 text-emerald-500" />
               </CardHeader>
               <CardContent><p className="text-2xl font-bold text-emerald-600">{formatCurrency(totalFaturamentoAno)}</p></CardContent>
@@ -283,7 +270,7 @@ export default function Financeiro() {
                     <YAxis tickFormatter={v => `${(v / 1000).toFixed(0)}k`} className="text-xs" />
                     <Tooltip formatter={(v: number) => formatCurrency(v)} />
                     <Legend />
-                    <Bar dataKey="faturamento" name="Faturamento" fill="#10b981" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="faturamento" name="Entradas" fill="#10b981" radius={[4, 4, 0, 0]} />
                     <Bar dataKey="despesas" name="Despesas" fill="hsl(var(--destructive))" radius={[4, 4, 0, 0]} />
                     <Line type="monotone" dataKey="acumulado" name="Saldo Acumulado" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 4 }} />
                   </ComposedChart>
