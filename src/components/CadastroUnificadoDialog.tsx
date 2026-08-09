@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Check, Copy, UserPlus } from "lucide-react";
+import { formatCPF } from "@/lib/format";
 
 const SEM_EQUIPE = "__sem_equipe__";
 const NOVO_CORRETOR = "__novo__";
@@ -197,7 +198,14 @@ export default function CadastroUnificadoDialog({ triggerLabel = "Cadastrar usu√
               </div>
               <div className="space-y-2">
                 <Label>CPF</Label>
-                <Input name="cpf" maxLength={14} placeholder="000.000.000-00" />
+                <Input
+                  name="cpf"
+                  maxLength={14}
+                  placeholder="000.000.000-00"
+                  onChange={(e) => {
+                    e.target.value = formatCPF(e.target.value);
+                  }}
+                />
               </div>
               <div className="space-y-2">
                 <Label>CRECI</Label>

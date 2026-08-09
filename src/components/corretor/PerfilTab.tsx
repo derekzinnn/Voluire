@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { Lock, Upload } from "lucide-react";
+import { formatCPF } from "@/lib/format";
 
 interface Props {
   corretorId: string;
@@ -177,6 +178,9 @@ export default function PerfilTab({ corretorId, perfil, podeGerenciar, isDiretor
                     disabled={!isDiretor}
                     maxLength={14}
                     placeholder={isDiretor ? "000.000.000-00" : "Sem CPF cadastrado"}
+                    onChange={(e) => {
+                      e.target.value = formatCPF(e.target.value);
+                    }}
                   />
                   {!isDiretor && (
                     <p className="text-xs text-muted-foreground">Mascarado — apenas a diretoria vê o CPF completo.</p>
