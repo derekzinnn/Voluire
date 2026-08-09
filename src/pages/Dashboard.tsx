@@ -222,7 +222,7 @@ export default function Dashboard() {
             <p className="text-xs text-muted-foreground">{pctQuitado} do VGV bruto</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="cursor-pointer transition-shadow hover:shadow-md" onClick={() => setPopupCat("corretores")}>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Corretores (geral)</CardTitle>
             <Users className="h-5 w-5 text-emerald-500" />
@@ -231,7 +231,7 @@ export default function Dashboard() {
             <p className="text-2xl font-bold text-emerald-600">{formatCurrency(totais.corretores)}</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="cursor-pointer transition-shadow hover:shadow-md" onClick={() => setPopupCat("gestores")}>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Gestores (geral)</CardTitle>
             <Briefcase className="h-5 w-5 text-amber-500" />
@@ -240,7 +240,7 @@ export default function Dashboard() {
             <p className="text-2xl font-bold text-amber-600">{formatCurrency(totais.gestores)}</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="cursor-pointer transition-shadow hover:shadow-md" onClick={() => setPopupCat("voluire")}>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Voluire (restante)</CardTitle>
             <Building2 className="h-5 w-5 text-primary" />
