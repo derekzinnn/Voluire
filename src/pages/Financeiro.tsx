@@ -253,46 +253,6 @@ export default function Financeiro() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader><CardTitle>Detalhamento Mensal</CardTitle></CardHeader>
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Mês</TableHead>
-                    <TableHead className="text-right">Faturamento</TableHead>
-                    <TableHead className="text-right">Despesas</TableHead>
-                    <TableHead className="text-right">Saldo do Mês</TableHead>
-                    <TableHead className="text-right">Saldo Acumulado</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {fluxoComAcumulado.map(f => (
-                    <TableRow key={f.mes}>
-                      <TableCell className="font-medium">{f.mes}</TableCell>
-                      <TableCell className="text-right text-emerald-600">{formatCurrency(f.faturamento)}</TableCell>
-                      <TableCell className="text-right text-destructive">{formatCurrency(f.despesas)}</TableCell>
-                      <TableCell className={`text-right font-semibold ${f.saldo >= 0 ? "text-emerald-600" : "text-destructive"}`}>
-                        {formatCurrency(f.saldo)}
-                      </TableCell>
-                      <TableCell className={`text-right font-semibold ${f.acumulado >= 0 ? "text-emerald-600" : "text-destructive"}`}>
-                        {formatCurrency(f.acumulado)}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  <TableRow className="bg-muted/50 font-bold">
-                    <TableCell>Total</TableCell>
-                    <TableCell className="text-right text-emerald-600">{formatCurrency(totalFaturamentoAno)}</TableCell>
-                    <TableCell className="text-right text-destructive">{formatCurrency(totalDespesasAno)}</TableCell>
-                    <TableCell className={`text-right ${saldoAno >= 0 ? "text-emerald-600" : "text-destructive"}`}>
-                      {formatCurrency(saldoAno)}
-                    </TableCell>
-                    <TableCell></TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
         </TabsContent>
 
         <TabsContent value="competencia" className="space-y-6 mt-6">
