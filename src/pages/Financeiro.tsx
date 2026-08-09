@@ -240,7 +240,7 @@ export default function Financeiro() {
 
         <TabsContent value="caixa" className="space-y-6 mt-6">
           <p className="text-sm text-muted-foreground">
-            Considera comissões da empresa <strong>efetivamente recebidas</strong> (pela data de recebimento) e despesas pelo mês lançado. Útil para acompanhar entradas e saídas reais.
+            Considera a receita da Voluire <strong>efetivamente recebida</strong>: cada <strong>parcela quitada</strong> entra no mês do recebimento, proporcional ao valor do contrato. Vendas sem parcelas usam a data de recebimento da comissão. Despesas pelo mês lançado.
           </p>
 
           {/* Cards resumo do ano */}
