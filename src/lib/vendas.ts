@@ -44,3 +44,10 @@ export const FORMA_PAGAMENTO_LABELS: Record<string, string> = {
   parcelado: "Parcelado",
   financiamento: "Financiamento",
 };
+
+export const EMPREENDIMENTO_TIPO_LABELS: Record<string, string> = {
+  pronto: "Pronto",
+  lancamento: "Lançamento",
+  estoque: "Estoque",
+  mcmv: "Minha Casa Minha Vida",
+};
