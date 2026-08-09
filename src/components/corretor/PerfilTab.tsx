@@ -177,6 +177,9 @@ export default function PerfilTab({ corretorId, perfil, podeGerenciar, isDiretor
                     disabled={!isDiretor}
                     maxLength={14}
                     placeholder={isDiretor ? "000.000.000-00" : "Sem CPF cadastrado"}
+                    onChange={(e) => {
+                      e.target.value = formatCPF(e.target.value);
+                    }}
                   />
                   {!isDiretor && (
                     <p className="text-xs text-muted-foreground">Mascarado — apenas a diretoria vê o CPF completo.</p>

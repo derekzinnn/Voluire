@@ -197,7 +197,14 @@ export default function CadastroUnificadoDialog({ triggerLabel = "Cadastrar usu√
               </div>
               <div className="space-y-2">
                 <Label>CPF</Label>
-                <Input name="cpf" maxLength={14} placeholder="000.000.000-00" />
+                <Input
+                  name="cpf"
+                  maxLength={14}
+                  placeholder="000.000.000-00"
+                  onChange={(e) => {
+                    e.target.value = formatCPF(e.target.value);
+                  }}
+                />
               </div>
               <div className="space-y-2">
                 <Label>CRECI</Label>
