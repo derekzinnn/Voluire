@@ -166,15 +166,25 @@ export default function Dashboard() {
         <AnoSeletor />
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Vendas brutas</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">VGV bruto</CardTitle>
             <TrendingUp className="h-5 w-5 text-primary" />
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold">{formatCurrency(totais.vgv)}</p>
             <p className="text-xs text-muted-foreground">{totais.qtd} vendas</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">VGV quitado</CardTitle>
+            <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold">{formatCurrency(totais.vgv_quitado)}</p>
+            <p className="text-xs text-muted-foreground">{pctQuitado} do VGV bruto</p>
           </CardContent>
         </Card>
         <Card>
