@@ -13,6 +13,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 interface ResumoMes {
   mes: number;
   vgv: number;
+  vgv_quitado: number;
   comissao_bruta: number;
   corretores: number;
   gestores: number;
@@ -33,6 +34,7 @@ export default function Dashboard() {
       return (data ?? []).map((r: any) => ({
         mes: Number(r.mes),
         vgv: Number(r.vgv),
+        vgv_quitado: Number(r.vgv_quitado),
         comissao_bruta: Number(r.comissao_bruta),
         corretores: Number(r.corretores),
         gestores: Number(r.gestores),
@@ -45,6 +47,7 @@ export default function Dashboard() {
   const totais = useMemo(
     () => ({
       vgv: resumo.reduce((s, r) => s + r.vgv, 0),
+      vgv_quitado: resumo.reduce((s, r) => s + r.vgv_quitado, 0),
       comissao_bruta: resumo.reduce((s, r) => s + r.comissao_bruta, 0),
       corretores: resumo.reduce((s, r) => s + r.corretores, 0),
       gestores: resumo.reduce((s, r) => s + r.gestores, 0),
