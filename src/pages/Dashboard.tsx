@@ -70,6 +70,31 @@ export default function Dashboard() {
   const pctQuitado =
     totais.vgv > 0 ? `${((totais.vgv_quitado / totais.vgv) * 100).toFixed(1)}%` : "—";
 
+  // Quitado / em aberto por categoria (proporcional ao VGV quitado de cada mês)
+  const quitadoPorCat = useMemo(() => {
+    const calc = (cat: "corretores" | "gestores" | "voluire") => {
+      let quitado = 0;
+      let aberto = 0;
+      for (const r of resumo) {
+        const total = r[cat];
+        if (r.vgv > 0) {
+          const ratio = r.vgv_quitado / r.vgv;
+          quitado += total * ratio;
+        } else {
+          aberto += total;
+        }
+      }
+      const totalGeral = totais[cat];
+      aberto = totalGeral - quitado;
+      return { total: totalGeral, quitado, aberto };
+    };
+    return {
+      corretores: calc("corretores"),
+      gestores: calc("gestores"),
+      voluire: calc("voluire"),
+    };
+  }, [resumo, totais]);
+
   const chartData = resumo.map((r) => ({
     mes: MESES[r.mes - 1].substring(0, 3),
     corretores: r.corretores,
