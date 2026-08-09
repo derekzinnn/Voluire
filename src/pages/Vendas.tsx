@@ -394,7 +394,15 @@ export default function Vendas() {
               </div>
               <div className="space-y-2">
                 <Label>Valor da venda (R$) *</Label>
-                <Input type="number" step="0.01" value={form.valor} onChange={(e) => set("valor", e.target.value)} />
+                <Input
+                  inputMode="numeric"
+                  placeholder="0,00"
+                  value={numberToCurrencyInput(form.valor)}
+                  onChange={(e) => {
+                    const masked = formatCurrencyInput(e.target.value);
+                    set("valor", masked ? String(parseCurrencyInput(masked)) : "");
+                  }}
+                />
               </div>
               <div className="space-y-2">
                 <Label>Comissão bruta (6% fixo)</Label>
@@ -670,20 +678,22 @@ export default function Vendas() {
                         >
                           Receber
                         </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            const d = new Date(p.data_prevista + "T12:00:00");
-                            d.setDate(d.getDate() + 30);
-                            atualizarParcela.mutate({
-                              id: p.id,
-                              patch: { data_prevista: d.toISOString().split("T")[0], dias_adiados: (p.dias_adiados || 0) + 30, status: "adiada" },
-                            });
-                          }}
-                        >
-                          Adiar 30d
-                        </Button>
+                        {parcelasVenda?.forma_pagamento === "financiamento" && (
+                          <AdiarPopover
+                            onConfirm={(dias) => {
+                              const d = new Date(p.data_prevista + "T12:00:00");
+                              d.setDate(d.getDate() + dias);
+                              atualizarParcela.mutate({
+                                id: p.id,
+                                patch: {
+                                  data_prevista: d.toISOString().split("T")[0],
+                                  dias_adiados: (p.dias_adiados || 0) + dias,
+                                  status: "adiada",
+                                },
+                              });
+                            }}
+                          />
+                        )}
                       </>
                     )}
                     {p.status === "recebida" && <Badge className="bg-emerald-100 text-emerald-800">Recebida</Badge>}
