@@ -234,7 +234,7 @@ export default function Financeiro() {
           <div className="grid gap-4 sm:grid-cols-3">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm text-muted-foreground">Faturamento {ano}</CardTitle>
+                <CardTitle className="text-sm text-muted-foreground">Entradas {ano}</CardTitle>
                 <TrendingUp className="h-5 w-5 text-emerald-500" />
               </CardHeader>
               <CardContent><p className="text-2xl font-bold text-emerald-600">{formatCurrency(totalFaturamentoAno)}</p></CardContent>
@@ -270,7 +270,7 @@ export default function Financeiro() {
                     <YAxis tickFormatter={v => `${(v / 1000).toFixed(0)}k`} className="text-xs" />
                     <Tooltip formatter={(v: number) => formatCurrency(v)} />
                     <Legend />
-                    <Bar dataKey="faturamento" name="Faturamento" fill="#10b981" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="faturamento" name="Entradas" fill="#10b981" radius={[4, 4, 0, 0]} />
                     <Bar dataKey="despesas" name="Despesas" fill="hsl(var(--destructive))" radius={[4, 4, 0, 0]} />
                     <Line type="monotone" dataKey="acumulado" name="Saldo Acumulado" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 4 }} />
                   </ComposedChart>
