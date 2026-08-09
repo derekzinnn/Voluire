@@ -44,6 +44,16 @@ export default function Financeiro() {
     },
   });
 
+  const { data: parcelas = [] } = useQuery({
+    queryKey: ["parcelas-financeiro"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("venda_parcelas")
+        .select("id, venda_id, valor, status, data_recebimento, vendas(id, valor, status)");
+      return data || [];
+    },
+  });
+
   const createDespesa = useMutation({
     mutationFn: async (formData: FormData) => {
       const { error } = await supabase.from("despesas").insert({
@@ -78,15 +88,44 @@ export default function Financeiro() {
   const filteredEmpresa = despesas.filter(d => d.tipo === "empresa" && d.mes.toString() === filtroMes);
   const totalEmpresa = filteredEmpresa.reduce((s, d) => s + Number(d.valor), 0);
 
-  // === Fluxo de Caixa: Faturamento (comissões recebidas) x Despesas ===
+  // === Fluxo de Caixa: entradas efetivadas x Despesas ===
+  // A receita da Voluire entra proporcionalmente a cada parcela recebida.
+  // Vendas sem parcelas cadastradas usam a data de recebimento da comissão.
+  const comissaoPorVenda = new Map<string, { empresa: number; vendaValor: number }>();
+  comissoes.forEach((c: any) => {
+    if (c.vendas?.id) {
+      comissaoPorVenda.set(c.vendas.id, {
+        empresa: Number(c.valor_empresa || 0),
+        vendaValor: Number(c.vendas.valor || 0),
+      });
+    }
+  });
+  const vendasComParcelas = new Set(parcelas.map((p: any) => p.venda_id));
+
   const fluxoMensal = MESES.map((mes, i) => {
-    const faturamento = comissoes
-      .filter(c => {
+    const porParcelas = parcelas
+      .filter((p: any) => {
+        if (p.status !== "recebida" || !p.data_recebimento) return false;
+        if (p.vendas?.status === "distrato") return false;
+        const d = parseLocalDate(p.data_recebimento);
+        return d?.getMonth() === i && d.getFullYear() === anoNum;
+      })
+      .reduce((s: number, p: any) => {
+        const info = comissaoPorVenda.get(p.venda_id);
+        if (!info || !info.vendaValor) return s;
+        return s + info.empresa * (Number(p.valor) / info.vendaValor);
+      }, 0);
+
+    const porComissao = comissoes
+      .filter((c: any) => {
         if (c.status !== "recebido" || !c.data_recebimento) return false;
+        if (c.vendas?.id && vendasComParcelas.has(c.vendas.id)) return false;
         const d = parseLocalDate(c.data_recebimento);
         return d?.getMonth() === i && d.getFullYear() === anoNum;
       })
-      .reduce((s, c) => s + Number(c.valor_empresa), 0);
+      .reduce((s: number, c: any) => s + Number(c.valor_empresa), 0);
+
+    const faturamento = porParcelas + porComissao;
 
     const despesasMes = despesas
       .filter(d => d.mes === i + 1)
@@ -201,7 +240,7 @@ export default function Financeiro() {
 
         <TabsContent value="caixa" className="space-y-6 mt-6">
           <p className="text-sm text-muted-foreground">
-            Considera comissões da empresa <strong>efetivamente recebidas</strong> (pela data de recebimento) e despesas pelo mês lançado. Útil para acompanhar entradas e saídas reais.
+            Considera a receita da Voluire <strong>efetivamente recebida</strong>: cada <strong>parcela quitada</strong> entra no mês do recebimento, proporcional ao valor do contrato. Vendas sem parcelas usam a data de recebimento da comissão. Despesas pelo mês lançado.
           </p>
 
           {/* Cards resumo do ano */}
