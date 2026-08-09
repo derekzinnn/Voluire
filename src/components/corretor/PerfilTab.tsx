@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { Lock, Upload } from "lucide-react";
-import { formatCPF } from "@/lib/format";
+import { formatCPF, formatPhone } from "@/lib/format";
 
 interface Props {
   corretorId: string;

@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Check, Copy, UserPlus } from "lucide-react";
-import { formatCPF } from "@/lib/format";
+import { formatCPF, formatPhone } from "@/lib/format";
 
 const SEM_EQUIPE = "__sem_equipe__";
 const NOVO_CORRETOR = "__novo__";
