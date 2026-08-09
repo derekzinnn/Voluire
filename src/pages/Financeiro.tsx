@@ -296,52 +296,84 @@ export default function Financeiro() {
         </TabsContent>
 
         <TabsContent value="competencia" className="space-y-6 mt-6">
-          <p className="text-sm text-muted-foreground">
-            Visão <strong>bruta</strong> do mês: toda venda entra <strong>integralmente no mês em que foi vendida</strong>, mesmo que parcelada ou financiada (ex.: R$ 2.000 em 4x = R$ 2.000 no mês da venda). Diferente do fluxo de caixa, que segue as datas de recebimento.
-          </p>
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <p className="text-sm text-muted-foreground max-w-2xl">
+              Visão <strong>bruta</strong> do mês: toda venda entra <strong>integralmente no mês em que foi vendida</strong>, mesmo que parcelada ou financiada (ex.: R$ 2.000 em 4x = R$ 2.000 no mês da venda). Diferente do fluxo de caixa, que segue as datas de recebimento.
+            </p>
+            <div className="flex gap-2 ml-auto shrink-0">
+              <Select value={mesGerencial} onValueChange={setMesGerencial}>
+                <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {MESES.map((m, i) => <SelectItem key={i + 1} value={(i + 1).toString()}>{m}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <Select value={ano} onValueChange={setAno}>
+                <SelectTrigger className="w-[110px]"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {anosDisponiveis.map(a => <SelectItem key={a} value={a.toString()}>{a}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <Card>
-              <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">VGV bruto {currentYear}</CardTitle></CardHeader>
-              <CardContent><p className="text-2xl font-bold">{formatCurrency(totalVgvCompAno)}</p></CardContent>
+              <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">VGV bruto — {MESES[Number(mesGerencial) - 1]}</CardTitle></CardHeader>
+              <CardContent>
+                <p className="text-2xl font-bold">{formatCurrency(mesSel.vgv)}</p>
+                <p className="text-xs text-muted-foreground mt-1">{mesSel.qtd} venda(s) · ano: {formatCurrency(totalVgvCompAno)}</p>
+              </CardContent>
             </Card>
             <Card>
-              <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Comissão bruta {currentYear}</CardTitle></CardHeader>
-              <CardContent><p className="text-2xl font-bold">{formatCurrency(totalComissaoBrutaAno)}</p></CardContent>
+              <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Comissão bruta — {MESES[Number(mesGerencial) - 1]}</CardTitle></CardHeader>
+              <CardContent>
+                <p className="text-2xl font-bold">{formatCurrency(mesSel.comissaoBruta)}</p>
+                <p className="text-xs text-muted-foreground mt-1">ano: {formatCurrency(totalComissaoBrutaAno)}</p>
+              </CardContent>
             </Card>
             <Card>
-              <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Repasse corretores {currentYear}</CardTitle></CardHeader>
-              <CardContent><p className="text-2xl font-bold">{formatCurrency(totalCorretoresAno)}</p></CardContent>
+              <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Repasse corretores — {MESES[Number(mesGerencial) - 1]}</CardTitle></CardHeader>
+              <CardContent>
+                <p className="text-2xl font-bold">{formatCurrency(mesSel.corretores)}</p>
+                <p className="text-xs text-muted-foreground mt-1">ano: {formatCurrency(totalCorretoresAno)}</p>
+              </CardContent>
             </Card>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm text-muted-foreground">Receita Voluire {currentYear}</CardTitle>
+                <CardTitle className="text-sm text-muted-foreground">Receita Voluire — {MESES[Number(mesGerencial) - 1]}</CardTitle>
                 <TrendingUp className="h-5 w-5 text-emerald-500" />
               </CardHeader>
-              <CardContent><p className="text-2xl font-bold text-emerald-600">{formatCurrency(totalReceitaCompAno)}</p></CardContent>
+              <CardContent>
+                <p className="text-2xl font-bold text-emerald-600">{formatCurrency(mesSel.receita)}</p>
+                <p className="text-xs text-muted-foreground mt-1">ano: {formatCurrency(totalReceitaCompAno)}</p>
+              </CardContent>
             </Card>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm text-muted-foreground">Despesas {currentYear}</CardTitle>
+                <CardTitle className="text-sm text-muted-foreground">Despesas — {MESES[Number(mesGerencial) - 1]}</CardTitle>
                 <TrendingDown className="h-5 w-5 text-destructive" />
               </CardHeader>
-              <CardContent><p className="text-2xl font-bold text-destructive">{formatCurrency(totalDespesasAno)}</p></CardContent>
+              <CardContent>
+                <p className="text-2xl font-bold text-destructive">{formatCurrency(mesSel.despesas)}</p>
+                <p className="text-xs text-muted-foreground mt-1">ano: {formatCurrency(totalDespesasAno)}</p>
+              </CardContent>
             </Card>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm text-muted-foreground">Resultado {currentYear}</CardTitle>
-                <Wallet className={`h-5 w-5 ${resultadoCompAno >= 0 ? "text-emerald-500" : "text-destructive"}`} />
+                <CardTitle className="text-sm text-muted-foreground">Resultado — {MESES[Number(mesGerencial) - 1]}</CardTitle>
+                <Wallet className={`h-5 w-5 ${mesSel.resultado >= 0 ? "text-emerald-500" : "text-destructive"}`} />
               </CardHeader>
               <CardContent>
-                <p className={`text-2xl font-bold ${resultadoCompAno >= 0 ? "text-emerald-600" : "text-destructive"}`}>
-                  {formatCurrency(resultadoCompAno)}
+                <p className={`text-2xl font-bold ${mesSel.resultado >= 0 ? "text-emerald-600" : "text-destructive"}`}>
+                  {formatCurrency(mesSel.resultado)}
                 </p>
+                <p className="text-xs text-muted-foreground mt-1">ano: {formatCurrency(resultadoCompAno)}</p>
               </CardContent>
             </Card>
           </div>
 
           <Card>
-            <CardHeader><CardTitle>Resultado Mensal por Competência — {currentYear}</CardTitle></CardHeader>
+            <CardHeader><CardTitle>Resultado Mensal por Competência — {ano}</CardTitle></CardHeader>
             <CardContent>
               <div className="h-[320px]">
                 <ResponsiveContainer width="100%" height="100%">
