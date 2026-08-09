@@ -208,21 +208,21 @@ export default function Financeiro() {
           <div className="grid gap-4 sm:grid-cols-3">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm text-muted-foreground">Faturamento {currentYear}</CardTitle>
+                <CardTitle className="text-sm text-muted-foreground">Faturamento {ano}</CardTitle>
                 <TrendingUp className="h-5 w-5 text-emerald-500" />
               </CardHeader>
               <CardContent><p className="text-2xl font-bold text-emerald-600">{formatCurrency(totalFaturamentoAno)}</p></CardContent>
             </Card>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm text-muted-foreground">Despesas {currentYear}</CardTitle>
+                <CardTitle className="text-sm text-muted-foreground">Despesas {ano}</CardTitle>
                 <TrendingDown className="h-5 w-5 text-destructive" />
               </CardHeader>
               <CardContent><p className="text-2xl font-bold text-destructive">{formatCurrency(totalDespesasAno)}</p></CardContent>
             </Card>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm text-muted-foreground">Saldo {currentYear}</CardTitle>
+                <CardTitle className="text-sm text-muted-foreground">Saldo {ano}</CardTitle>
                 <Wallet className={`h-5 w-5 ${saldoAno >= 0 ? "text-emerald-500" : "text-destructive"}`} />
               </CardHeader>
               <CardContent>
@@ -234,7 +234,7 @@ export default function Financeiro() {
           </div>
 
           <Card>
-            <CardHeader><CardTitle>Fluxo de Caixa Mensal — {currentYear}</CardTitle></CardHeader>
+            <CardHeader><CardTitle>Fluxo de Caixa Mensal — {ano}</CardTitle></CardHeader>
             <CardContent>
               <div className="h-[320px]">
                 <ResponsiveContainer width="100%" height="100%">
