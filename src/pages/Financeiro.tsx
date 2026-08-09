@@ -88,18 +88,9 @@ export default function Financeiro() {
   const filteredEmpresa = despesas.filter(d => d.tipo === "empresa" && d.mes.toString() === filtroMes);
   const totalEmpresa = filteredEmpresa.reduce((s, d) => s + Number(d.valor), 0);
 
-  // === Fluxo de Caixa: entradas efetivadas x Despesas ===
-  // A receita da Voluire entra proporcionalmente a cada parcela recebida.
+  // === Fluxo de Caixa: entradas efetivadas (valor total) x Despesas ===
+  // Cada parcela recebida entra com seu valor integral no mês do recebimento.
   // Vendas sem parcelas cadastradas usam a data de recebimento da comissão.
-  const comissaoPorVenda = new Map<string, { empresa: number; vendaValor: number }>();
-  comissoes.forEach((c: any) => {
-    if (c.vendas?.id) {
-      comissaoPorVenda.set(c.vendas.id, {
-        empresa: Number(c.valor_empresa || 0),
-        vendaValor: Number(c.vendas.valor || 0),
-      });
-    }
-  });
   const vendasComParcelas = new Set(parcelas.map((p: any) => p.venda_id));
 
   const fluxoMensal = MESES.map((mes, i) => {
@@ -110,11 +101,7 @@ export default function Financeiro() {
         const d = parseLocalDate(p.data_recebimento);
         return d?.getMonth() === i && d.getFullYear() === anoNum;
       })
-      .reduce((s: number, p: any) => {
-        const info = comissaoPorVenda.get(p.venda_id);
-        if (!info || !info.vendaValor) return s;
-        return s + info.empresa * (Number(p.valor) / info.vendaValor);
-      }, 0);
+      .reduce((s: number, p: any) => s + Number(p.valor), 0);
 
     const porComissao = comissoes
       .filter((c: any) => {
@@ -123,7 +110,7 @@ export default function Financeiro() {
         const d = parseLocalDate(c.data_recebimento);
         return d?.getMonth() === i && d.getFullYear() === anoNum;
       })
-      .reduce((s: number, c: any) => s + Number(c.valor_empresa), 0);
+      .reduce((s: number, c: any) => s + Number(c.valor_total), 0);
 
     const faturamento = porParcelas + porComissao;
 
