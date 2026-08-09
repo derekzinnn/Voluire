@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 import { formatCurrency, MESES } from "@/lib/format";
 import { TrendingUp, Users, Briefcase, Building2, CheckCircle2 } from "lucide-react";
@@ -21,10 +22,19 @@ interface ResumoMes {
   qtd_vendas: number;
 }
 
+type CategoriaPopup = "corretores" | "gestores" | "voluire";
+
+const CATEGORIA_INFO: Record<CategoriaPopup, { titulo: string; cor: string; descricao: string }> = {
+  corretores: { titulo: "Corretores", cor: "text-emerald-600", descricao: "Repasse de comissão aos corretores" },
+  gestores: { titulo: "Gestores", cor: "text-amber-600", descricao: "Comissão de gestão das equipes" },
+  voluire: { titulo: "Voluire", cor: "text-primary", descricao: "Receita líquida da empresa" },
+};
+
 export default function Dashboard() {
   const anoAtual = new Date().getFullYear();
   const { role, isGestor, loading: roleLoading } = useUserRole();
   const [anoSel, setAnoSel] = useState(anoAtual);
+  const [popupCat, setPopupCat] = useState<CategoriaPopup | null>(null);
 
   const { data: resumo = [] } = useQuery({
     queryKey: ["resumo-dashboard", anoSel],
@@ -59,6 +69,31 @@ export default function Dashboard() {
 
   const pctQuitado =
     totais.vgv > 0 ? `${((totais.vgv_quitado / totais.vgv) * 100).toFixed(1)}%` : "—";
+
+  // Quitado / em aberto por categoria (proporcional ao VGV quitado de cada mês)
+  const quitadoPorCat = useMemo(() => {
+    const calc = (cat: "corretores" | "gestores" | "voluire") => {
+      let quitado = 0;
+      let aberto = 0;
+      for (const r of resumo) {
+        const total = r[cat];
+        if (r.vgv > 0) {
+          const ratio = r.vgv_quitado / r.vgv;
+          quitado += total * ratio;
+        } else {
+          aberto += total;
+        }
+      }
+      const totalGeral = totais[cat];
+      aberto = totalGeral - quitado;
+      return { total: totalGeral, quitado, aberto };
+    };
+    return {
+      corretores: calc("corretores"),
+      gestores: calc("gestores"),
+      voluire: calc("voluire"),
+    };
+  }, [resumo, totais]);
 
   const chartData = resumo.map((r) => ({
     mes: MESES[r.mes - 1].substring(0, 3),
@@ -187,7 +222,7 @@ export default function Dashboard() {
             <p className="text-xs text-muted-foreground">{pctQuitado} do VGV bruto</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="cursor-pointer transition-shadow hover:shadow-md" onClick={() => setPopupCat("corretores")}>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Corretores (geral)</CardTitle>
             <Users className="h-5 w-5 text-emerald-500" />
@@ -196,7 +231,7 @@ export default function Dashboard() {
             <p className="text-2xl font-bold text-emerald-600">{formatCurrency(totais.corretores)}</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="cursor-pointer transition-shadow hover:shadow-md" onClick={() => setPopupCat("gestores")}>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Gestores (geral)</CardTitle>
             <Briefcase className="h-5 w-5 text-amber-500" />
@@ -205,7 +240,7 @@ export default function Dashboard() {
             <p className="text-2xl font-bold text-amber-600">{formatCurrency(totais.gestores)}</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="cursor-pointer transition-shadow hover:shadow-md" onClick={() => setPopupCat("voluire")}>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Voluire (restante)</CardTitle>
             <Building2 className="h-5 w-5 text-primary" />
@@ -237,6 +272,62 @@ export default function Dashboard() {
           </div>
         </CardContent>
       </Card>
+
+      <Dialog open={popupCat !== null} onOpenChange={(open) => !open && setPopupCat(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {popupCat === "corretores" && <Users className="h-5 w-5 text-emerald-500" />}
+              {popupCat === "gestores" && <Briefcase className="h-5 w-5 text-amber-500" />}
+              {popupCat === "voluire" && <Building2 className="h-5 w-5 text-primary" />}
+              {popupCat ? CATEGORIA_INFO[popupCat].titulo : ""}
+            </DialogTitle>
+            <DialogDescription>
+              {popupCat ? CATEGORIA_INFO[popupCat].descricao : ""} — {anoSel}
+            </DialogDescription>
+          </DialogHeader>
+
+          {popupCat && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-lg border bg-muted/30 p-4">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <CheckCircle2 className="h-4 w-4 text-emerald-500" /> Quitado
+                  </div>
+                  <p className="mt-1 text-xl font-bold text-emerald-600">
+                    {formatCurrency(quitadoPorCat[popupCat].quitado)}
+                  </p>
+                </div>
+                <div className="rounded-lg border bg-muted/30 p-4">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <TrendingUp className="h-4 w-4 text-amber-500" /> Em aberto
+                  </div>
+                  <p className="mt-1 text-xl font-bold text-amber-600">
+                    {formatCurrency(quitadoPorCat[popupCat].aberto)}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between rounded-lg border p-4">
+                <span className="text-sm font-medium text-muted-foreground">Total</span>
+                <span className={`text-xl font-bold ${CATEGORIA_INFO[popupCat].cor}`}>
+                  {formatCurrency(quitadoPorCat[popupCat].total)}
+                </span>
+              </div>
+
+              {(() => {
+                const q = quitadoPorCat[popupCat];
+                const pct = q.total > 0 ? `${((q.quitado / q.total) * 100).toFixed(1)}%` : "—";
+                return (
+                  <p className="text-center text-sm text-muted-foreground">
+                    {pct} quitado do total
+                  </p>
+                );
+              })()}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
