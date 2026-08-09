@@ -272,6 +272,62 @@ export default function Dashboard() {
           </div>
         </CardContent>
       </Card>
+
+      <Dialog open={popupCat !== null} onOpenChange={(open) => !open && setPopupCat(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {popupCat === "corretores" && <Users className="h-5 w-5 text-emerald-500" />}
+              {popupCat === "gestores" && <Briefcase className="h-5 w-5 text-amber-500" />}
+              {popupCat === "voluire" && <Building2 className="h-5 w-5 text-primary" />}
+              {popupCat ? CATEGORIA_INFO[popupCat].titulo : ""}
+            </DialogTitle>
+            <DialogDescription>
+              {popupCat ? CATEGORIA_INFO[popupCat].descricao : ""} — {anoSel}
+            </DialogDescription>
+          </DialogHeader>
+
+          {popupCat && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-lg border bg-muted/30 p-4">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <CheckCircle2 className="h-4 w-4 text-emerald-500" /> Quitado
+                  </div>
+                  <p className="mt-1 text-xl font-bold text-emerald-600">
+                    {formatCurrency(quitadoPorCat[popupCat].quitado)}
+                  </p>
+                </div>
+                <div className="rounded-lg border bg-muted/30 p-4">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <TrendingUp className="h-4 w-4 text-amber-500" /> Em aberto
+                  </div>
+                  <p className="mt-1 text-xl font-bold text-amber-600">
+                    {formatCurrency(quitadoPorCat[popupCat].aberto)}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between rounded-lg border p-4">
+                <span className="text-sm font-medium text-muted-foreground">Total</span>
+                <span className={`text-xl font-bold ${CATEGORIA_INFO[popupCat].cor}`}>
+                  {formatCurrency(quitadoPorCat[popupCat].total)}
+                </span>
+              </div>
+
+              {(() => {
+                const q = quitadoPorCat[popupCat];
+                const pct = q.total > 0 ? `${((q.quitado / q.total) * 100).toFixed(1)}%` : "—";
+                return (
+                  <p className="text-center text-sm text-muted-foreground">
+                    {pct} quitado do total
+                  </p>
+                );
+              })()}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
