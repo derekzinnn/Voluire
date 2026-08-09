@@ -97,10 +97,6 @@ export default function Vendas() {
 
   const totalParcelas = parcelasEdit.reduce((s, p) => s + (Number(p.valor) || 0), 0);
 
-  const empSelecionado = empreendimentos.find((e: any) => e.id === form.empreendimento_id) as any;
-  const isPronto = empSelecionado?.tipo === "pronto";
-  const comissaoBruta = (Number(form.valor) || 0) * 0.06;
-
   const { data: vendas = [] } = useQuery({
     queryKey: ["vendas"],
     queryFn: async () => {
@@ -151,6 +147,10 @@ export default function Vendas() {
       return data ?? [];
     },
   });
+
+  const empSelecionado = (empreendimentos as any[]).find((e) => e.id === form.empreendimento_id);
+  const isPronto = empSelecionado?.tipo === "pronto";
+  const comissaoBruta = (Number(form.valor) || 0) * 0.06;
 
   const salvar = useMutation({
     mutationFn: async () => {
