@@ -253,46 +253,6 @@ export default function Financeiro() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader><CardTitle>Detalhamento Mensal</CardTitle></CardHeader>
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Mês</TableHead>
-                    <TableHead className="text-right">Faturamento</TableHead>
-                    <TableHead className="text-right">Despesas</TableHead>
-                    <TableHead className="text-right">Saldo do Mês</TableHead>
-                    <TableHead className="text-right">Saldo Acumulado</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {fluxoComAcumulado.map(f => (
-                    <TableRow key={f.mes}>
-                      <TableCell className="font-medium">{f.mes}</TableCell>
-                      <TableCell className="text-right text-emerald-600">{formatCurrency(f.faturamento)}</TableCell>
-                      <TableCell className="text-right text-destructive">{formatCurrency(f.despesas)}</TableCell>
-                      <TableCell className={`text-right font-semibold ${f.saldo >= 0 ? "text-emerald-600" : "text-destructive"}`}>
-                        {formatCurrency(f.saldo)}
-                      </TableCell>
-                      <TableCell className={`text-right font-semibold ${f.acumulado >= 0 ? "text-emerald-600" : "text-destructive"}`}>
-                        {formatCurrency(f.acumulado)}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  <TableRow className="bg-muted/50 font-bold">
-                    <TableCell>Total</TableCell>
-                    <TableCell className="text-right text-emerald-600">{formatCurrency(totalFaturamentoAno)}</TableCell>
-                    <TableCell className="text-right text-destructive">{formatCurrency(totalDespesasAno)}</TableCell>
-                    <TableCell className={`text-right ${saldoAno >= 0 ? "text-emerald-600" : "text-destructive"}`}>
-                      {formatCurrency(saldoAno)}
-                    </TableCell>
-                    <TableCell></TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
         </TabsContent>
 
         <TabsContent value="competencia" className="space-y-6 mt-6">
@@ -389,63 +349,6 @@ export default function Financeiro() {
                   </ComposedChart>
                 </ResponsiveContainer>
               </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader><CardTitle>Detalhamento Mensal</CardTitle></CardHeader>
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Mês</TableHead>
-                    <TableHead className="text-right">Vendas</TableHead>
-                    <TableHead className="text-right">VGV bruto</TableHead>
-                    <TableHead className="text-right">Comissão bruta</TableHead>
-                    <TableHead className="text-right">Corretores</TableHead>
-                    <TableHead className="text-right">Receita</TableHead>
-                    <TableHead className="text-right">Despesas</TableHead>
-                    <TableHead className="text-right">Resultado do Mês</TableHead>
-                    <TableHead className="text-right">Resultado Acumulado</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {competenciaComAcumulado.map(f => (
-                    <TableRow
-                      key={f.mes}
-                      className="cursor-pointer"
-                      onClick={() => setMesGerencial((f.mesIndex + 1).toString())}
-                    >
-                      <TableCell className="font-medium">{f.mes}</TableCell>
-                      <TableCell className="text-right">{f.qtd}</TableCell>
-                      <TableCell className="text-right">{formatCurrency(f.vgv)}</TableCell>
-                      <TableCell className="text-right">{formatCurrency(f.comissaoBruta)}</TableCell>
-                      <TableCell className="text-right">{formatCurrency(f.corretores)}</TableCell>
-                      <TableCell className="text-right text-emerald-600">{formatCurrency(f.receita)}</TableCell>
-                      <TableCell className="text-right text-destructive">{formatCurrency(f.despesas)}</TableCell>
-                      <TableCell className={`text-right font-semibold ${f.resultado >= 0 ? "text-emerald-600" : "text-destructive"}`}>
-                        {formatCurrency(f.resultado)}
-                      </TableCell>
-                      <TableCell className={`text-right font-semibold ${f.acumulado >= 0 ? "text-emerald-600" : "text-destructive"}`}>
-                        {formatCurrency(f.acumulado)}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  <TableRow className="bg-muted/50 font-bold">
-                    <TableCell>Total</TableCell>
-                    <TableCell className="text-right">{competenciaMensal.reduce((s, f) => s + f.qtd, 0)}</TableCell>
-                    <TableCell className="text-right">{formatCurrency(totalVgvCompAno)}</TableCell>
-                    <TableCell className="text-right">{formatCurrency(totalComissaoBrutaAno)}</TableCell>
-                    <TableCell className="text-right">{formatCurrency(totalCorretoresAno)}</TableCell>
-                    <TableCell className="text-right text-emerald-600">{formatCurrency(totalReceitaCompAno)}</TableCell>
-                    <TableCell className="text-right text-destructive">{formatCurrency(totalDespesasAno)}</TableCell>
-                    <TableCell className={`text-right ${resultadoCompAno >= 0 ? "text-emerald-600" : "text-destructive"}`}>
-                      {formatCurrency(resultadoCompAno)}
-                    </TableCell>
-                    <TableCell></TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
             </CardContent>
           </Card>
 
