@@ -10,13 +10,42 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { formatCurrency, formatDate, formatPercent } from "@/lib/format";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { formatCurrency, formatDate, formatPercent, formatCurrencyInput, numberToCurrencyInput, parseCurrencyInput } from "@/lib/format";
 import { FORMA_PAGAMENTO_LABELS, EMPREENDIMENTO_TIPO_LABELS } from "@/lib/vendas";
 import { useToast } from "@/hooks/use-toast";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Plus, Pencil, Trash2, Receipt } from "lucide-react";
 
 const NONE = "__none__";
+
+function AdiarPopover({ onConfirm }: { onConfirm: (dias: number) => void }) {
+  const [open, setOpen] = useState(false);
+  const [dias, setDias] = useState("30");
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button variant="ghost" size="sm">Adiar</Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-56 space-y-2 pointer-events-auto" align="end">
+        <Label>Adiar por quantos dias?</Label>
+        <Input type="number" min="1" value={dias} onChange={(e) => setDias(e.target.value)} />
+        <Button
+          size="sm"
+          className="w-full"
+          onClick={() => {
+            const n = Number(dias);
+            if (!n || n < 1) return;
+            onConfirm(n);
+            setOpen(false);
+          }}
+        >
+          Confirmar
+        </Button>
+      </PopoverContent>
+    </Popover>
+  );
+}
 const statusColors: Record<string, string> = {
   ativa: "bg-emerald-100 text-emerald-800",
   distrato: "bg-red-100 text-red-800",
@@ -365,7 +394,15 @@ export default function Vendas() {
               </div>
               <div className="space-y-2">
                 <Label>Valor da venda (R$) *</Label>
-                <Input type="number" step="0.01" value={form.valor} onChange={(e) => set("valor", e.target.value)} />
+                <Input
+                  inputMode="numeric"
+                  placeholder="0,00"
+                  value={numberToCurrencyInput(form.valor)}
+                  onChange={(e) => {
+                    const masked = formatCurrencyInput(e.target.value);
+                    set("valor", masked ? String(parseCurrencyInput(masked)) : "");
+                  }}
+                />
               </div>
               <div className="space-y-2">
                 <Label>Comissão bruta (6% fixo)</Label>
@@ -641,20 +678,22 @@ export default function Vendas() {
                         >
                           Receber
                         </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            const d = new Date(p.data_prevista + "T12:00:00");
-                            d.setDate(d.getDate() + 30);
-                            atualizarParcela.mutate({
-                              id: p.id,
-                              patch: { data_prevista: d.toISOString().split("T")[0], dias_adiados: (p.dias_adiados || 0) + 30, status: "adiada" },
-                            });
-                          }}
-                        >
-                          Adiar 30d
-                        </Button>
+                        {parcelasVenda?.forma_pagamento === "financiamento" && (
+                          <AdiarPopover
+                            onConfirm={(dias) => {
+                              const d = new Date(p.data_prevista + "T12:00:00");
+                              d.setDate(d.getDate() + dias);
+                              atualizarParcela.mutate({
+                                id: p.id,
+                                patch: {
+                                  data_prevista: d.toISOString().split("T")[0],
+                                  dias_adiados: (p.dias_adiados || 0) + dias,
+                                  status: "adiada",
+                                },
+                              });
+                            }}
+                          />
+                        )}
                       </>
                     )}
                     {p.status === "recebida" && <Badge className="bg-emerald-100 text-emerald-800">Recebida</Badge>}
