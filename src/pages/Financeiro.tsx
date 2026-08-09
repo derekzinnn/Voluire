@@ -451,13 +451,7 @@ export default function Financeiro() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between gap-4">
-              <CardTitle>Contratos de {MESES[Number(mesGerencial) - 1]} — valor integral</CardTitle>
-              <Select value={mesGerencial} onValueChange={setMesGerencial}>
-                <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {MESES.map((m, i) => <SelectItem key={i + 1} value={(i + 1).toString()}>{m}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <CardTitle>Contratos de {MESES[Number(mesGerencial) - 1]} {ano} — valor integral</CardTitle>
             </CardHeader>
             <CardContent className="p-0">
               <Table>
