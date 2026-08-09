@@ -46,6 +46,7 @@ export default function Financeiro() {
 
   const createDespesa = useMutation({
     mutationFn: async (formData: FormData) => {
+      // noop-marker
       const { error } = await supabase.from("despesas").insert({
         categoria: formData.get("categoria") as string,
         descricao: formData.get("descricao") as string || null,
