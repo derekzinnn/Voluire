@@ -213,7 +213,14 @@ export default function CadastroUnificadoDialog({ triggerLabel = "Cadastrar usu√
               </div>
               <div className="space-y-2">
                 <Label>Telefone</Label>
-                <Input name="telefone_pessoal" maxLength={20} placeholder="(51) 90000-0000" />
+                <Input
+                  name="telefone_pessoal"
+                  maxLength={15}
+                  placeholder="(51) 90000-0000"
+                  onChange={(e) => {
+                    e.target.value = formatPhone(e.target.value);
+                  }}
+                />
               </div>
               <div className="space-y-2">
                 <Label>E-mail pessoal</Label>

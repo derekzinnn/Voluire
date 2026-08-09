@@ -158,7 +158,16 @@ export default function PerfilTab({ corretorId, perfil, podeGerenciar, isDiretor
               </div>
               <div className="space-y-2">
                 <Label>Telefone pessoal</Label>
-                <Input name="telefone_pessoal" defaultValue={perfil?.telefone_pessoal ?? ""} disabled={readOnly} placeholder="(51) 90000-0000" />
+                <Input
+                  name="telefone_pessoal"
+                  defaultValue={perfil?.telefone_pessoal ?? ""}
+                  disabled={readOnly}
+                  maxLength={15}
+                  placeholder="(51) 90000-0000"
+                  onChange={(e) => {
+                    e.target.value = formatPhone(e.target.value);
+                  }}
+                />
               </div>
               <div className="space-y-2">
                 <Label>E-mail pessoal</Label>
