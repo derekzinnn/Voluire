@@ -11,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatCurrency, formatDate, formatPercent } from "@/lib/format";
-import { FORMA_PAGAMENTO_LABELS } from "@/lib/vendas";
+import { FORMA_PAGAMENTO_LABELS, EMPREENDIMENTO_TIPO_LABELS } from "@/lib/vendas";
 import { useToast } from "@/hooks/use-toast";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Plus, Pencil, Trash2, Receipt } from "lucide-react";
@@ -122,7 +122,7 @@ export default function Vendas() {
   const { data: empreendimentos = [] } = useQuery({
     queryKey: ["empreendimentos"],
     queryFn: async () => {
-      const { data } = await supabase.from("empreendimentos").select("id, nome").order("nome");
+      const { data } = await supabase.from("empreendimentos").select("id, nome, tipo").order("nome");
       return data ?? [];
     },
   });
@@ -147,6 +147,10 @@ export default function Vendas() {
       return data ?? [];
     },
   });
+
+  const empSelecionado = (empreendimentos as any[]).find((e) => e.id === form.empreendimento_id);
+  const isPronto = empSelecionado?.tipo === "pronto";
+  const comissaoBruta = (Number(form.valor) || 0) * 0.06;
 
   const salvar = useMutation({
     mutationFn: async () => {
@@ -336,9 +340,18 @@ export default function Vendas() {
                   <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value={NONE}>Sem empreendimento</SelectItem>
-                    {empreendimentos.map((e) => <SelectItem key={e.id} value={e.id}>{e.nome}</SelectItem>)}
+                    {(empreendimentos as any[]).map((e) => (
+                      <SelectItem key={e.id} value={e.id}>
+                        {e.nome} · {EMPREENDIMENTO_TIPO_LABELS[e.tipo] ?? e.tipo}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
+                {isPronto && (
+                  <p className="text-xs text-muted-foreground">
+                    Imóvel pronto: agenciador 10% ({formatCurrency(comissaoBruta * 0.1)}) e vendedor 40% ({formatCurrency(comissaoBruta * 0.4)}) da comissão bruta.
+                  </p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label>Parceiro (construtora / imobiliária)</Label>
@@ -499,7 +512,7 @@ export default function Vendas() {
                 </div>
               </div>
               <div className="space-y-2 sm:col-span-2">
-                <Label>Captador</Label>
+                <Label>{isPronto ? "Agenciador (captador) — 10%" : "Captador"}</Label>
                 <Select value={form.captador_corretor_id} onValueChange={(v) => set("captador_corretor_id", v)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent className="max-h-60">

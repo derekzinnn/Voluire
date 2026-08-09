@@ -82,6 +82,9 @@ export function canAccessPage(role: AppRole | null, page: string): boolean {
   // Parceiros: diretor e gerente
   if (page === "/parceiros") return role === "diretor" || role === "gerente";
 
+  // Empreendimentos: diretor e gerente
+  if (page === "/empreendimentos") return role === "diretor" || role === "gerente";
+
   // Área de gestão de pessoas: diretor e gerente
   if (page === "/minha-equipe") return role === "diretor" || role === "gerente";
 
