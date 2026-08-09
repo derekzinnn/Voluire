@@ -6,13 +6,14 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 import { formatCurrency, MESES } from "@/lib/format";
-import { TrendingUp, Users, Briefcase, Building2 } from "lucide-react";
+import { TrendingUp, Users, Briefcase, Building2, CheckCircle2 } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis, Legend } from "recharts";
 import { useUserRole } from "@/hooks/useUserRole";
 
 interface ResumoMes {
   mes: number;
   vgv: number;
+  vgv_quitado: number;
   comissao_bruta: number;
   corretores: number;
   gestores: number;
@@ -33,6 +34,7 @@ export default function Dashboard() {
       return (data ?? []).map((r: any) => ({
         mes: Number(r.mes),
         vgv: Number(r.vgv),
+        vgv_quitado: Number(r.vgv_quitado),
         comissao_bruta: Number(r.comissao_bruta),
         corretores: Number(r.corretores),
         gestores: Number(r.gestores),
@@ -45,6 +47,7 @@ export default function Dashboard() {
   const totais = useMemo(
     () => ({
       vgv: resumo.reduce((s, r) => s + r.vgv, 0),
+      vgv_quitado: resumo.reduce((s, r) => s + r.vgv_quitado, 0),
       comissao_bruta: resumo.reduce((s, r) => s + r.comissao_bruta, 0),
       corretores: resumo.reduce((s, r) => s + r.corretores, 0),
       gestores: resumo.reduce((s, r) => s + r.gestores, 0),
@@ -53,6 +56,9 @@ export default function Dashboard() {
     }),
     [resumo]
   );
+
+  const pctQuitado =
+    totais.vgv > 0 ? `${((totais.vgv_quitado / totais.vgv) * 100).toFixed(1)}%` : "—";
 
   const chartData = resumo.map((r) => ({
     mes: MESES[r.mes - 1].substring(0, 3),
@@ -96,15 +102,25 @@ export default function Dashboard() {
           <AnoSeletor />
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-4 sm:grid-cols-3">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Minhas vendas brutas</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Meu VGV bruto</CardTitle>
               <TrendingUp className="h-5 w-5 text-primary" />
             </CardHeader>
             <CardContent>
               <p className="text-2xl font-bold">{formatCurrency(totais.vgv)}</p>
               <p className="text-xs text-muted-foreground">{totais.qtd} vendas</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Meu VGV quitado</CardTitle>
+              <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+            </CardHeader>
+            <CardContent>
+              <p className="text-2xl font-bold">{formatCurrency(totais.vgv_quitado)}</p>
+              <p className="text-xs text-muted-foreground">{pctQuitado} do VGV bruto</p>
             </CardContent>
           </Card>
           <Card>
@@ -150,15 +166,25 @@ export default function Dashboard() {
         <AnoSeletor />
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Vendas brutas</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">VGV bruto</CardTitle>
             <TrendingUp className="h-5 w-5 text-primary" />
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold">{formatCurrency(totais.vgv)}</p>
             <p className="text-xs text-muted-foreground">{totais.qtd} vendas</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">VGV quitado</CardTitle>
+            <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold">{formatCurrency(totais.vgv_quitado)}</p>
+            <p className="text-xs text-muted-foreground">{pctQuitado} do VGV bruto</p>
           </CardContent>
         </Card>
         <Card>

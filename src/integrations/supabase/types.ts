@@ -800,6 +800,7 @@ export type Database = {
           mes: number
           qtd_vendas: number
           vgv: number
+          vgv_quitado: number
           voluire: number
         }[]
       }
