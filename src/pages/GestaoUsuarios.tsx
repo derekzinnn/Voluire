@@ -230,7 +230,16 @@ export default function GestaoUsuarios() {
           </div>
         </CardContent>
       </Card>
-    </div>
+      </TabsContent>
+
+      <TabsContent value="equipes">
+        <EquipesManager />
+      </TabsContent>
+
+      <TabsContent value="comissoes">
+        <GestorFaixasManager />
+      </TabsContent>
+    </Tabs>
   );
 }
 
