@@ -9,9 +9,9 @@ import { useToast } from "@/hooks/use-toast";
 import { UserCheck, Shield, Link2, Unlink } from "lucide-react";
 import type { AppRole } from "@/hooks/useUserRole";
 import EquipesManager from "@/components/EquipesManager";
-import OnboardingEtapasManager from "@/components/OnboardingEtapasManager";
 import GestorFaixasManager from "@/components/GestorFaixasManager";
 import VincularUsuarioDialog from "@/components/VincularUsuarioDialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const ROLE_LABELS: Record<string, string> = {
   diretor: "Diretor",
