@@ -229,7 +229,7 @@ export default function CadastroUnificadoDialog({ triggerLabel = "Cadastrar usu√
               </div>
               <div className="space-y-2">
                 <Label>Data de nascimento</Label>
-                <Input name="data_nascimento" type="date" />
+                <DatePickerField name="data_nascimento" placeholder="dd/mm/aaaa" />
               </div>
             </div>
 

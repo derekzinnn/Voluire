@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { Lock, Upload } from "lucide-react";
 import { formatCPF, formatPhone } from "@/lib/format";
+import { DatePickerField } from "@/components/ui/date-picker-field";
 
 interface Props {
   corretorId: string;
