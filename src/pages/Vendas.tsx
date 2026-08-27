@@ -384,7 +384,7 @@ export default function Vendas() {
               </div>
               <div className="space-y-2">
                 <Label>Data da venda (competência) *</Label>
-                <Input type="date" value={form.data_venda} onChange={(e) => set("data_venda", e.target.value)} />
+                <DatePickerField value={form.data_venda} onChange={(v) => set("data_venda", v)} />
               </div>
               <div className="space-y-2">
                 <Label>Cliente *</Label>
