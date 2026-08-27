@@ -579,11 +579,13 @@ export default function Vendas() {
                         <div key={i} className="flex items-center gap-2">
                           <span className="w-8 text-sm text-muted-foreground">{i + 1}º</span>
                           <Input
-                            type="number"
-                            step="0.01"
-                            value={p.valor}
-                            onChange={(e) => setParcela(i, "valor", e.target.value)}
-                            placeholder="Valor"
+                            inputMode="numeric"
+                            value={p.valor ? numberToCurrencyInput(p.valor) : ""}
+                            onChange={(e) => {
+                              const masked = formatCurrencyInput(e.target.value);
+                              setParcela(i, "valor", masked ? String(parseCurrencyInput(masked)) : "");
+                            }}
+                            placeholder="0,00"
                           />
                           <DatePickerField
                             value={p.data_prevista}
