@@ -12,7 +12,8 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { formatCurrency, formatCurrencyInput, parseCurrencyInput, MESES, parseLocalDate } from "@/lib/format";
 import { FORMA_PAGAMENTO_LABELS } from "@/lib/vendas";
-import { Plus, Trash2, TrendingUp, TrendingDown, Wallet } from "lucide-react";
+import { Plus, Trash2, TrendingUp, TrendingDown, Wallet, Info } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Line, ComposedChart } from "recharts";
 
 export default function Financeiro() {
