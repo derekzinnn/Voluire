@@ -113,13 +113,17 @@ export default function GestaoUsuarios() {
 
 
   return (
-    <div className="space-y-6">
-      {/* Cadastro unificado: login + ficha + equipe + função */}
-      <div className="flex justify-end">
+    <Tabs defaultValue="usuarios" className="space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <TabsList>
+          <TabsTrigger value="usuarios">Usuários e permissões</TabsTrigger>
+          <TabsTrigger value="equipes">Equipes</TabsTrigger>
+          <TabsTrigger value="comissoes">Comissões</TabsTrigger>
+        </TabsList>
         <VincularUsuarioDialog />
       </div>
 
-
+      <TabsContent value="usuarios" className="space-y-6">
       {/* Users & Roles */}
       <Card>
         <CardHeader>
