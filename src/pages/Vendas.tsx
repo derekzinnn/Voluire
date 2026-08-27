@@ -141,7 +141,33 @@ export default function Vendas() {
   const [form, setForm] = useState<FormState>(emptyForm());
   const [parcelasVenda, setParcelasVenda] = useState<any | null>(null);
   const [parcelasEdit, setParcelasEdit] = useState<{ valor: string; data_prevista: string }[]>([]);
+  const [step, setStep] = useState(0);
   const set = (k: keyof FormState, v: string) => setForm((f) => ({ ...f, [k]: v }));
+
+  function avancar() {
+    const erro = (msg: string) => {
+      toast({ title: "Complete a etapa", description: msg, variant: "destructive" });
+      return true;
+    };
+    if (step === 0) {
+      if (!form.numero_contrato.trim()) return erro("Informe o número do contrato.");
+      if (!form.data_venda) return erro("Informe a data da venda.");
+      if (!form.cliente_nome.trim()) return erro("Informe o cliente.");
+      if (!form.unidade.trim()) return erro("Informe a unidade.");
+    }
+    if (step === 1 && !(Number(form.valor) > 0)) return erro("Informe o valor da venda.");
+    if (step === 2) {
+      if (form.forma_pagamento === "a_vista") {
+        if (!form.primeira_parcela) return erro("Informe a data prevista de recebimento.");
+      } else {
+        if (parcelasEdit.length === 0) return erro("Gere ou adicione as parcelas.");
+        if (parcelasEdit.some((p) => !p.data_prevista)) return erro("Informe a data de todas as parcelas.");
+        if (Math.abs(totalParcelas - (Number(form.valor) || 0)) > 0.05)
+          return erro("A soma das parcelas deve fechar com o valor da venda.");
+      }
+    }
+    setStep((s) => Math.min(s + 1, STEPS.length - 1));
+  }
 
   function gerarParcelas(qtd: number, primeira: string, valorTotal: number) {
     const n = Math.max(1, qtd || 1);
