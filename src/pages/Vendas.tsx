@@ -83,6 +83,13 @@ const statusColors: Record<string, string> = {
   quitada: "bg-blue-100 text-blue-800",
 };
 
+const STEPS = [
+  { title: "Contrato", desc: "Etapa 1 de 4 — identificação do contrato, cliente e imóvel." },
+  { title: "Valores", desc: "Etapa 2 de 4 — valor da venda e comissão bruta." },
+  { title: "Pagamento", desc: "Etapa 3 de 4 — forma de pagamento e cronograma de recebimento." },
+  { title: "Equipe", desc: "Etapa 4 de 4 — corretores, captador e conferência final." },
+];
+
 type FormState = {
   numero_contrato: string;
   cliente_nome: string;
