@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
@@ -16,7 +16,7 @@ import { formatCurrency, formatDate, formatPercent, formatCurrencyInput, numberT
 import { FORMA_PAGAMENTO_LABELS, EMPREENDIMENTO_TIPO_LABELS } from "@/lib/vendas";
 import { useToast } from "@/hooks/use-toast";
 import { useUserRole } from "@/hooks/useUserRole";
-import { Plus, Pencil, Trash2, Receipt, CalendarIcon } from "lucide-react";
+import { Plus, Pencil, Trash2, Receipt, CalendarIcon, Check, ChevronLeft, ChevronRight } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale/pt-BR";
 import { cn } from "@/lib/utils";
@@ -83,6 +83,13 @@ const statusColors: Record<string, string> = {
   quitada: "bg-blue-100 text-blue-800",
 };
 
+const STEPS = [
+  { title: "Contrato", desc: "Etapa 1 de 4 — identificação do contrato, cliente e imóvel." },
+  { title: "Valores", desc: "Etapa 2 de 4 — valor da venda e comissão bruta." },
+  { title: "Pagamento", desc: "Etapa 3 de 4 — forma de pagamento e cronograma de recebimento." },
+  { title: "Equipe", desc: "Etapa 4 de 4 — corretores, captador e conferência final." },
+];
+
 type FormState = {
   numero_contrato: string;
   cliente_nome: string;
@@ -134,7 +141,33 @@ export default function Vendas() {
   const [form, setForm] = useState<FormState>(emptyForm());
   const [parcelasVenda, setParcelasVenda] = useState<any | null>(null);
   const [parcelasEdit, setParcelasEdit] = useState<{ valor: string; data_prevista: string }[]>([]);
+  const [step, setStep] = useState(0);
   const set = (k: keyof FormState, v: string) => setForm((f) => ({ ...f, [k]: v }));
+
+  function avancar() {
+    const erro = (msg: string) => {
+      toast({ title: "Complete a etapa", description: msg, variant: "destructive" });
+      return true;
+    };
+    if (step === 0) {
+      if (!form.numero_contrato.trim()) return erro("Informe o número do contrato.");
+      if (!form.data_venda) return erro("Informe a data da venda.");
+      if (!form.cliente_nome.trim()) return erro("Informe o cliente.");
+      if (!form.unidade.trim()) return erro("Informe a unidade.");
+    }
+    if (step === 1 && !(Number(form.valor) > 0)) return erro("Informe o valor da venda.");
+    if (step === 2) {
+      if (form.forma_pagamento === "a_vista") {
+        if (!form.primeira_parcela) return erro("Informe a data prevista de recebimento.");
+      } else {
+        if (parcelasEdit.length === 0) return erro("Gere ou adicione as parcelas.");
+        if (parcelasEdit.some((p) => !p.data_prevista)) return erro("Informe a data de todas as parcelas.");
+        if (Math.abs(totalParcelas - (Number(form.valor) || 0)) > 0.05)
+          return erro("A soma das parcelas deve fechar com o valor da venda.");
+      }
+    }
+    setStep((s) => Math.min(s + 1, STEPS.length - 1));
+  }
 
   function gerarParcelas(qtd: number, primeira: string, valorTotal: number) {
     const n = Math.max(1, qtd || 1);
@@ -343,6 +376,7 @@ export default function Vendas() {
       qtd_parcelas: String((ps ?? []).length || 1),
       primeira_parcela: (ps ?? [])[0]?.data_prevista ?? v.data_venda ?? new Date().toISOString().split("T")[0],
     });
+    setStep(0);
     setOpen(true);
   }
 
@@ -371,12 +405,42 @@ export default function Vendas() {
       </div>
 
       {isGestor && (
-        <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) { setEditId(null); setForm(emptyForm()); setParcelasEdit([]); } }}>
+        <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) { setEditId(null); setForm(emptyForm()); setParcelasEdit([]); setStep(0); } }}>
           <DialogTrigger asChild>
             <Button><Plus className="mr-2 h-4 w-4" />Novo contrato</Button>
           </DialogTrigger>
           <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
-            <DialogHeader><DialogTitle>{editId ? "Editar contrato" : "Novo contrato"}</DialogTitle></DialogHeader>
+            <DialogHeader>
+              <DialogTitle>{editId ? "Editar contrato" : "Novo contrato"}</DialogTitle>
+              <DialogDescription>{STEPS[step].desc}</DialogDescription>
+            </DialogHeader>
+
+            {/* Stepper */}
+            <div className="flex items-center gap-2">
+              {STEPS.map((s, i) => (
+                <div key={s.title} className="flex flex-1 items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => i < step && setStep(i)}
+                    className={cn(
+                      "flex h-7 w-7 shrink-0 items-center justify-center rounded-full border text-xs font-semibold transition-colors",
+                      i === step && "border-primary bg-primary text-primary-foreground",
+                      i < step && "border-primary bg-primary/10 text-primary",
+                      i > step && "text-muted-foreground"
+                    )}
+                  >
+                    {i < step ? <Check className="h-3.5 w-3.5" /> : i + 1}
+                  </button>
+                  <span className={cn("hidden text-xs sm:block", i === step ? "font-medium" : "text-muted-foreground")}>
+                    {s.title}
+                  </span>
+                  {i < STEPS.length - 1 && <div className="h-px flex-1 bg-border" />}
+                </div>
+              ))}
+            </div>
+
+            {/* Etapa 1 — Contrato */}
+            {step === 0 && (
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label>Nº do contrato *</Label>
@@ -424,6 +488,23 @@ export default function Vendas() {
                 </Select>
               </div>
               <div className="space-y-2">
+                <Label>Status</Label>
+                <Select value={form.status} onValueChange={(v) => set("status", v)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ativa">Ativa</SelectItem>
+                    <SelectItem value="quitada">Quitada</SelectItem>
+                    <SelectItem value="distrato">Distrato</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            )}
+
+            {/* Etapa 2 — Valores */}
+            {step === 1 && (
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
                 <Label>Valor da venda (R$) *</Label>
                 <Input
                   inputMode="numeric"
@@ -437,8 +518,22 @@ export default function Vendas() {
               </div>
               <div className="space-y-2">
                 <Label>Comissão bruta (6% fixo)</Label>
-                <Input value={formatCurrency((Number(form.valor) || 0) * 0.06)} readOnly disabled />
+                <Input value={formatCurrency(comissaoBruta)} readOnly disabled />
               </div>
+              <div className="rounded-md border p-3 text-sm sm:col-span-2">
+                <p className="font-medium">Como a comissão será distribuída</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {isPronto
+                    ? "Imóvel pronto: 10% agenciador, 40% vendedor, restante entre gestor e Voluire."
+                    : "Corretor conforme o split da ficha, gestor por faixa mensal (8–12%) e o restante fica com a Voluire."}
+                </p>
+              </div>
+            </div>
+            )}
+
+            {/* Etapa 3 — Pagamento */}
+            {step === 2 && (
+            <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label>Forma de pagamento</Label>
                 <Select
@@ -453,17 +548,6 @@ export default function Vendas() {
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {Object.entries(FORMA_PAGAMENTO_LABELS).map(([k, l]) => <SelectItem key={k} value={k}>{l}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Status</Label>
-                <Select value={form.status} onValueChange={(v) => set("status", v)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="ativa">Ativa</SelectItem>
-                    <SelectItem value="quitada">Quitada</SelectItem>
-                    <SelectItem value="distrato">Distrato</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -549,6 +633,12 @@ export default function Vendas() {
                   <DatePickerField value={form.primeira_parcela} onChange={(v) => set("primeira_parcela", v)} />
                 </div>
               )}
+            </div>
+            )}
+
+            {/* Etapa 4 — Equipe */}
+            {step === 3 && (
+            <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2 sm:col-span-2">
                 <Label>Corretor responsável *</Label>
                 <div className="flex gap-2">
@@ -592,12 +682,40 @@ export default function Vendas() {
                 <Label>Observação</Label>
                 <Textarea value={form.observacao} onChange={(e) => set("observacao", e.target.value)} rows={2} />
               </div>
+
+              <div className="rounded-md border bg-muted/40 p-3 text-sm sm:col-span-2">
+                <p className="mb-2 font-medium">Resumo do contrato</p>
+                <div className="grid gap-1 text-xs text-muted-foreground sm:grid-cols-2">
+                  <span>Contrato: {form.numero_contrato || "—"}</span>
+                  <span>Data: {form.data_venda ? formatDate(form.data_venda) : "—"}</span>
+                  <span>Cliente: {form.cliente_nome || "—"}</span>
+                  <span>Unidade: {form.unidade || "—"}</span>
+                  <span>Valor: {formatCurrency(Number(form.valor) || 0)}</span>
+                  <span>Comissão bruta: {formatCurrency(comissaoBruta)}</span>
+                  <span>Pagamento: {FORMA_PAGAMENTO_LABELS[form.forma_pagamento] ?? form.forma_pagamento}</span>
+                  <span>
+                    Parcelas: {form.forma_pagamento === "a_vista" ? "1 (à vista)" : `${parcelasEdit.length}x`}
+                  </span>
+                </div>
+              </div>
             </div>
-            <DialogFooter>
-              <Button onClick={() => salvar.mutate()} disabled={salvar.isPending}>
-                {salvar.isPending ? "Salvando..." : "Salvar"}
+            )}
+
+            <DialogFooter className="gap-2 sm:justify-between">
+              <Button type="button" variant="ghost" disabled={step === 0} onClick={() => setStep((s) => s - 1)}>
+                <ChevronLeft className="mr-1 h-4 w-4" />Voltar
               </Button>
+              {step < STEPS.length - 1 ? (
+                <Button type="button" onClick={avancar}>
+                  Continuar<ChevronRight className="ml-1 h-4 w-4" />
+                </Button>
+              ) : (
+                <Button onClick={() => salvar.mutate()} disabled={salvar.isPending}>
+                  {salvar.isPending ? "Salvando..." : editId ? "Salvar alterações" : "Registrar contrato"}
+                </Button>
+              )}
             </DialogFooter>
+
           </DialogContent>
         </Dialog>
       )}
