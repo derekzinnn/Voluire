@@ -11,7 +11,7 @@ import type { AppRole } from "@/hooks/useUserRole";
 import EquipesManager from "@/components/EquipesManager";
 import OnboardingEtapasManager from "@/components/OnboardingEtapasManager";
 import GestorFaixasManager from "@/components/GestorFaixasManager";
-import CadastroUnificadoDialog from "@/components/CadastroUnificadoDialog";
+import VincularUsuarioDialog from "@/components/VincularUsuarioDialog";
 
 const ROLE_LABELS: Record<string, string> = {
   diretor: "Diretor",
@@ -116,7 +116,7 @@ export default function GestaoUsuarios() {
     <div className="space-y-6">
       {/* Cadastro unificado: login + ficha + equipe + função */}
       <div className="flex justify-end">
-        <CadastroUnificadoDialog />
+        <VincularUsuarioDialog />
       </div>
 
 
