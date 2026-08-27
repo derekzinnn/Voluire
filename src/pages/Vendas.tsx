@@ -11,11 +11,15 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import { formatCurrency, formatDate, formatPercent, formatCurrencyInput, numberToCurrencyInput, parseCurrencyInput } from "@/lib/format";
 import { FORMA_PAGAMENTO_LABELS, EMPREENDIMENTO_TIPO_LABELS } from "@/lib/vendas";
 import { useToast } from "@/hooks/use-toast";
 import { useUserRole } from "@/hooks/useUserRole";
-import { Plus, Pencil, Trash2, Receipt } from "lucide-react";
+import { Plus, Pencil, Trash2, Receipt, CalendarIcon } from "lucide-react";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale/pt-BR";
+import { cn } from "@/lib/utils";
 
 const NONE = "__none__";
 
@@ -42,6 +46,33 @@ function AdiarPopover({ onConfirm }: { onConfirm: (dias: number) => void }) {
         >
           Confirmar
         </Button>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+function DatePickerField({ value, onChange, placeholder = "Selecione" }: { value: string; onChange: (v: string) => void; placeholder?: string }) {
+  const date = value ? new Date(value + "T12:00:00") : undefined;
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          className={cn("w-full justify-start text-left font-normal", !date && "text-muted-foreground")}
+        >
+          <CalendarIcon className="mr-2 h-4 w-4" />
+          {date ? format(date, "dd/MM/yyyy", { locale: ptBR }) : <span>{placeholder}</span>}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0" align="start">
+        <Calendar
+          mode="single"
+          selected={date}
+          onSelect={(d) => onChange(d ? d.toISOString().split("T")[0] : "")}
+          initialFocus
+          className="p-3 pointer-events-auto"
+          locale={ptBR}
+        />
       </PopoverContent>
     </Popover>
   );
@@ -353,7 +384,7 @@ export default function Vendas() {
               </div>
               <div className="space-y-2">
                 <Label>Data da venda (competência) *</Label>
-                <Input type="date" value={form.data_venda} onChange={(e) => set("data_venda", e.target.value)} />
+                <DatePickerField value={form.data_venda} onChange={(v) => set("data_venda", v)} />
               </div>
               <div className="space-y-2">
                 <Label>Cliente *</Label>
@@ -444,7 +475,7 @@ export default function Vendas() {
                   </div>
                   <div className="space-y-2">
                     <Label>1ª parcela prevista</Label>
-                    <Input type="date" value={form.primeira_parcela} onChange={(e) => set("primeira_parcela", e.target.value)} />
+                    <DatePickerField value={form.primeira_parcela} onChange={(v) => set("primeira_parcela", v)} />
                   </div>
                   <div className="space-y-3 sm:col-span-2 rounded-md border p-3">
                     <div className="flex flex-wrap items-center justify-between gap-2">
@@ -470,10 +501,9 @@ export default function Vendas() {
                             onChange={(e) => setParcela(i, "valor", e.target.value)}
                             placeholder="Valor"
                           />
-                          <Input
-                            type="date"
+                          <DatePickerField
                             value={p.data_prevista}
-                            onChange={(e) => setParcela(i, "data_prevista", e.target.value)}
+                            onChange={(v) => setParcela(i, "data_prevista", v)}
                           />
                           <Button
                             type="button"
@@ -516,7 +546,7 @@ export default function Vendas() {
               {form.forma_pagamento === "a_vista" && (
                 <div className="space-y-2">
                   <Label>Recebimento previsto</Label>
-                  <Input type="date" value={form.primeira_parcela} onChange={(e) => set("primeira_parcela", e.target.value)} />
+                  <DatePickerField value={form.primeira_parcela} onChange={(v) => set("primeira_parcela", v)} />
                 </div>
               )}
               <div className="space-y-2 sm:col-span-2">
