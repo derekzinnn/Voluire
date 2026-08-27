@@ -8,7 +8,8 @@ import { formatCurrency, formatPercent } from "@/lib/format";
 import { Trash2, IdCard } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
-import CadastroUnificadoDialog from "@/components/CadastroUnificadoDialog";
+import NovoCorretorDialog from "@/components/NovoCorretorDialog";
+import VincularUsuarioDialog from "@/components/VincularUsuarioDialog";
 import { fetchVendasPorCorretor } from "@/lib/vendas";
 
 export default function Corretores() {
@@ -53,7 +54,10 @@ export default function Corretores() {
   return (
     <div className="space-y-6">
       <div className="flex justify-end">
-        <CadastroUnificadoDialog triggerLabel="Cadastrar corretor" />
+        <div className="flex gap-2">
+          <NovoCorretorDialog />
+          <VincularUsuarioDialog />
+        </div>
       </div>
 
 
