@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { useUserRole, canAccessPage } from "@/hooks/useUserRole";
 import ChangePasswordDialog from "@/components/ChangePasswordDialog";
+import ParcelasVencidasDialog from "@/components/ParcelasVencidasDialog";
 
 const navItems = [
   { to: "/", icon: LayoutDashboard, label: "Dashboard" },
@@ -112,6 +113,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           {children}
         </main>
       </div>
+      <ParcelasVencidasDialog />
     </div>
   );
 }
