@@ -10,6 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Check, Copy, UserPlus } from "lucide-react";
 import { formatCPF, formatPhone } from "@/lib/format";
+import { DatePickerField } from "@/components/ui/date-picker-field";
 
 const SEM_EQUIPE = "__sem_equipe__";
 const NOVO_CORRETOR = "__novo__";
