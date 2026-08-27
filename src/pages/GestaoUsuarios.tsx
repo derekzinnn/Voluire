@@ -214,13 +214,6 @@ export default function GestaoUsuarios() {
         </CardContent>
       </Card>
 
-      <EquipesManager />
-
-      <GestorFaixasManager />
-
-      <OnboardingEtapasManager />
-
-
       {/* Unlinked corretores */}
       <Card>
         <CardHeader>
