@@ -50,6 +50,33 @@ function AdiarPopover({ onConfirm }: { onConfirm: (dias: number) => void }) {
     </Popover>
   );
 }
+
+function DatePickerField({ value, onChange, placeholder = "Selecione" }: { value: string; onChange: (v: string) => void; placeholder?: string }) {
+  const date = value ? new Date(value + "T12:00:00") : undefined;
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          className={cn("w-full justify-start text-left font-normal", !date && "text-muted-foreground")}
+        >
+          <CalendarIcon className="mr-2 h-4 w-4" />
+          {date ? format(date, "dd/MM/yyyy", { locale: ptBR }) : <span>{placeholder}</span>}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0" align="start">
+        <Calendar
+          mode="single"
+          selected={date}
+          onSelect={(d) => onChange(d ? d.toISOString().split("T")[0] : "")}
+          initialFocus
+          className="p-3 pointer-events-auto"
+          locale={ptBR}
+        />
+      </PopoverContent>
+    </Popover>
+  );
+}
 const statusColors: Record<string, string> = {
   ativa: "bg-emerald-100 text-emerald-800",
   distrato: "bg-red-100 text-red-800",
