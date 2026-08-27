@@ -501,10 +501,9 @@ export default function Vendas() {
                             onChange={(e) => setParcela(i, "valor", e.target.value)}
                             placeholder="Valor"
                           />
-                          <Input
-                            type="date"
+                          <DatePickerField
                             value={p.data_prevista}
-                            onChange={(e) => setParcela(i, "data_prevista", e.target.value)}
+                            onChange={(v) => setParcela(i, "data_prevista", v)}
                           />
                           <Button
                             type="button"
