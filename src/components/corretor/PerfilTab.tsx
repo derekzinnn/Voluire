@@ -145,7 +145,7 @@ export default function PerfilTab({ corretorId, perfil, podeGerenciar, isDiretor
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <div className="space-y-2">
                 <Label>Data de nascimento</Label>
-                <Input type="date" name="data_nascimento" defaultValue={perfil?.data_nascimento ?? ""} disabled={readOnly} />
+                <DatePickerField name="data_nascimento" defaultValue={perfil?.data_nascimento ?? ""} disabled={readOnly} placeholder="dd/mm/aaaa" />
               </div>
               <div className="space-y-2">
                 <Label>Telefone pessoal</Label>
