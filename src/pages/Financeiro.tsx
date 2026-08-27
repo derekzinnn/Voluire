@@ -284,9 +284,21 @@ export default function Financeiro() {
 
         <TabsContent value="competencia" className="space-y-6 mt-6">
           <div className="flex flex-wrap items-start justify-between gap-4">
-            <p className="text-sm text-muted-foreground max-w-2xl">
-              Visão <strong>bruta</strong> do mês: toda venda entra <strong>integralmente no mês em que foi vendida</strong>, mesmo que parcelada ou financiada (ex.: R$ 2.000 em 4x = R$ 2.000 no mês da venda). Diferente do fluxo de caixa, que segue as datas de recebimento.
-            </p>
+            <div className="flex items-center gap-2">
+              <h2 className="text-lg font-semibold tracking-tight">VISÃO BRUTA DO MÊS</h2>
+              <TooltipProvider>
+                <InfoTooltip>
+                  <TooltipTrigger asChild>
+                    <button type="button" className="rounded-full p-1 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+                      <Info className="h-4 w-4" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="right" className="max-w-sm">
+                    <p>Visão <strong>bruta</strong> do mês: toda venda entra <strong>integralmente no mês em que foi vendida</strong>, mesmo que parcelada ou financiada (ex.: R$ 2.000 em 4x = R$ 2.000 no mês da venda). Diferente do fluxo de caixa, que segue as datas de recebimento.</p>
+                  </TooltipContent>
+                </InfoTooltip>
+              </TooltipProvider>
+            </div>
             <div className="flex gap-2 ml-auto shrink-0">
               <Select value={mesGerencial} onValueChange={setMesGerencial}>
                 <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>
