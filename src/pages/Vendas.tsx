@@ -376,7 +376,37 @@ export default function Vendas() {
             <Button><Plus className="mr-2 h-4 w-4" />Novo contrato</Button>
           </DialogTrigger>
           <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
-            <DialogHeader><DialogTitle>{editId ? "Editar contrato" : "Novo contrato"}</DialogTitle></DialogHeader>
+            <DialogHeader>
+              <DialogTitle>{editId ? "Editar contrato" : "Novo contrato"}</DialogTitle>
+              <DialogDescription>{STEPS[step].desc}</DialogDescription>
+            </DialogHeader>
+
+            {/* Stepper */}
+            <div className="flex items-center gap-2">
+              {STEPS.map((s, i) => (
+                <div key={s.title} className="flex flex-1 items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => i < step && setStep(i)}
+                    className={cn(
+                      "flex h-7 w-7 shrink-0 items-center justify-center rounded-full border text-xs font-semibold transition-colors",
+                      i === step && "border-primary bg-primary text-primary-foreground",
+                      i < step && "border-primary bg-primary/10 text-primary",
+                      i > step && "text-muted-foreground"
+                    )}
+                  >
+                    {i < step ? <Check className="h-3.5 w-3.5" /> : i + 1}
+                  </button>
+                  <span className={cn("hidden text-xs sm:block", i === step ? "font-medium" : "text-muted-foreground")}>
+                    {s.title}
+                  </span>
+                  {i < STEPS.length - 1 && <div className="h-px flex-1 bg-border" />}
+                </div>
+              ))}
+            </div>
+
+            {/* Etapa 1 — Contrato */}
+            {step === 0 && (
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label>Nº do contrato *</Label>
@@ -424,6 +454,23 @@ export default function Vendas() {
                 </Select>
               </div>
               <div className="space-y-2">
+                <Label>Status</Label>
+                <Select value={form.status} onValueChange={(v) => set("status", v)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ativa">Ativa</SelectItem>
+                    <SelectItem value="quitada">Quitada</SelectItem>
+                    <SelectItem value="distrato">Distrato</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            )}
+
+            {/* Etapa 2 — Valores */}
+            {step === 1 && (
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
                 <Label>Valor da venda (R$) *</Label>
                 <Input
                   inputMode="numeric"
@@ -437,8 +484,22 @@ export default function Vendas() {
               </div>
               <div className="space-y-2">
                 <Label>Comissão bruta (6% fixo)</Label>
-                <Input value={formatCurrency((Number(form.valor) || 0) * 0.06)} readOnly disabled />
+                <Input value={formatCurrency(comissaoBruta)} readOnly disabled />
               </div>
+              <div className="rounded-md border p-3 text-sm sm:col-span-2">
+                <p className="font-medium">Como a comissão será distribuída</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {isPronto
+                    ? "Imóvel pronto: 10% agenciador, 40% vendedor, restante entre gestor e Voluire."
+                    : "Corretor conforme o split da ficha, gestor por faixa mensal (8–12%) e o restante fica com a Voluire."}
+                </p>
+              </div>
+            </div>
+            )}
+
+            {/* Etapa 3 — Pagamento */}
+            {step === 2 && (
+            <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label>Forma de pagamento</Label>
                 <Select
@@ -453,17 +514,6 @@ export default function Vendas() {
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {Object.entries(FORMA_PAGAMENTO_LABELS).map(([k, l]) => <SelectItem key={k} value={k}>{l}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Status</Label>
-                <Select value={form.status} onValueChange={(v) => set("status", v)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="ativa">Ativa</SelectItem>
-                    <SelectItem value="quitada">Quitada</SelectItem>
-                    <SelectItem value="distrato">Distrato</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -549,6 +599,12 @@ export default function Vendas() {
                   <DatePickerField value={form.primeira_parcela} onChange={(v) => set("primeira_parcela", v)} />
                 </div>
               )}
+            </div>
+            )}
+
+            {/* Etapa 4 — Equipe */}
+            {step === 3 && (
+            <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2 sm:col-span-2">
                 <Label>Corretor responsável *</Label>
                 <div className="flex gap-2">
@@ -592,12 +648,40 @@ export default function Vendas() {
                 <Label>Observação</Label>
                 <Textarea value={form.observacao} onChange={(e) => set("observacao", e.target.value)} rows={2} />
               </div>
+
+              <div className="rounded-md border bg-muted/40 p-3 text-sm sm:col-span-2">
+                <p className="mb-2 font-medium">Resumo do contrato</p>
+                <div className="grid gap-1 text-xs text-muted-foreground sm:grid-cols-2">
+                  <span>Contrato: {form.numero_contrato || "—"}</span>
+                  <span>Data: {form.data_venda ? formatDate(form.data_venda) : "—"}</span>
+                  <span>Cliente: {form.cliente_nome || "—"}</span>
+                  <span>Unidade: {form.unidade || "—"}</span>
+                  <span>Valor: {formatCurrency(Number(form.valor) || 0)}</span>
+                  <span>Comissão bruta: {formatCurrency(comissaoBruta)}</span>
+                  <span>Pagamento: {FORMA_PAGAMENTO_LABELS[form.forma_pagamento] ?? form.forma_pagamento}</span>
+                  <span>
+                    Parcelas: {form.forma_pagamento === "a_vista" ? "1 (à vista)" : `${parcelasEdit.length}x`}
+                  </span>
+                </div>
+              </div>
             </div>
-            <DialogFooter>
-              <Button onClick={() => salvar.mutate()} disabled={salvar.isPending}>
-                {salvar.isPending ? "Salvando..." : "Salvar"}
+            )}
+
+            <DialogFooter className="gap-2 sm:justify-between">
+              <Button type="button" variant="ghost" disabled={step === 0} onClick={() => setStep((s) => s - 1)}>
+                <ChevronLeft className="mr-1 h-4 w-4" />Voltar
               </Button>
+              {step < STEPS.length - 1 ? (
+                <Button type="button" onClick={avancar}>
+                  Continuar<ChevronRight className="ml-1 h-4 w-4" />
+                </Button>
+              ) : (
+                <Button onClick={() => salvar.mutate()} disabled={salvar.isPending}>
+                  {salvar.isPending ? "Salvando..." : editId ? "Salvar alterações" : "Registrar contrato"}
+                </Button>
+              )}
             </DialogFooter>
+
           </DialogContent>
         </Dialog>
       )}
