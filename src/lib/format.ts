@@ -68,6 +68,19 @@ export function formatCPF(value: string): string {
 }
 
 /**
+ * Formata uma string como CNPJ: 00.000.000/0000-00.
+ * Limita a 14 dígitos. Retorna a string formatada (parcial enquanto digita).
+ */
+export function formatCNPJ(value: string): string {
+  const d = onlyDigits(value).slice(0, 14);
+  return d
+    .replace(/(\d{2})(\d)/, "$1.$2")
+    .replace(/(\d{3})(\d)/, "$1.$2")
+    .replace(/(\d{3})(\d)/, "$1/$2")
+    .replace(/(\d{4})(\d{1,2})$/, "$1-$2");
+}
+
+/**
  * Formata uma string como telefone brasileiro: (51) 90000-0000.
  * Limita a 11 dígitos. Retorna a string formatada (parcial enquanto digita).
  */
