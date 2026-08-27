@@ -376,6 +376,7 @@ export default function Vendas() {
       qtd_parcelas: String((ps ?? []).length || 1),
       primeira_parcela: (ps ?? [])[0]?.data_prevista ?? v.data_venda ?? new Date().toISOString().split("T")[0],
     });
+    setStep(0);
     setOpen(true);
   }
 
