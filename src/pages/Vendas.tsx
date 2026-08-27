@@ -475,7 +475,7 @@ export default function Vendas() {
                   </div>
                   <div className="space-y-2">
                     <Label>1ª parcela prevista</Label>
-                    <Input type="date" value={form.primeira_parcela} onChange={(e) => set("primeira_parcela", e.target.value)} />
+                    <DatePickerField value={form.primeira_parcela} onChange={(v) => set("primeira_parcela", v)} />
                   </div>
                   <div className="space-y-3 sm:col-span-2 rounded-md border p-3">
                     <div className="flex flex-wrap items-center justify-between gap-2">
