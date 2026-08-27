@@ -31,7 +31,8 @@ export default function CadastroUnificadoDialog({ triggerLabel = "Cadastrar usu√
   const [open, setOpen] = useState(false);
   const [role, setRole] = useState("corretor");
   const [equipeId, setEquipeId] = useState(SEM_EQUIPE);
-  const [vinculo, setVinculo] = useState(NOVO_CORRETOR);
+  const [step, setStep] = useState(0);
+  const formRef = useRef<HTMLFormElement>(null);
   const [resultado, setResultado] = useState<{ email: string; password: string } | null>(null);
   const [copiado, setCopiado] = useState(false);
 
@@ -43,21 +44,26 @@ export default function CadastroUnificadoDialog({ triggerLabel = "Cadastrar usu√
     },
   });
 
-  const { data: corretoresSemLogin = [] } = useQuery({
-    queryKey: ["corretores-sem-login"],
-    queryFn: async () => {
-      const { data } = await supabase.from("corretores").select("id, nome").is("user_id", null).order("nome");
-      return data ?? [];
-    },
-  });
-
   const reset = () => {
     setResultado(null);
     setRole("corretor");
     setEquipeId(SEM_EQUIPE);
-    setVinculo(NOVO_CORRETOR);
+    setStep(0);
     setCopiado(false);
   };
+
+  function avancar() {
+    if (step === 0) {
+      const fd = new FormData(formRef.current!);
+      const nome = String(fd.get("nome") ?? "").trim();
+      const email = String(fd.get("email") ?? "").trim();
+      if (!nome || !email) {
+        toast({ title: "Complete a etapa", description: "Informe nome e e-mail de acesso.", variant: "destructive" });
+        return;
+      }
+    }
+    setStep((s) => Math.min(s + 1, STEPS.length - 1));
+  }
 
   const cadastrar = useMutation({
     mutationFn: async (fd: FormData) => {
@@ -67,8 +73,8 @@ export default function CadastroUnificadoDialog({ triggerLabel = "Cadastrar usu√
           email: fd.get("email"),
           role,
           equipe_id: equipeId === SEM_EQUIPE ? null : equipeId,
-          corretor_id_existente: vinculo === NOVO_CORRETOR ? null : vinculo,
-          criar_corretor: role !== "diretor" || vinculo !== NOVO_CORRETOR,
+          corretor_id_existente: null,
+          criar_corretor: role !== "diretor",
           comissao_percentual: fd.get("comissao_percentual"),
           cpf: fd.get("cpf"),
           creci: fd.get("creci"),
