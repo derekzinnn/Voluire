@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -6,14 +6,19 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Check, Copy, UserPlus } from "lucide-react";
+import { Plus, Check, Copy, UserPlus, ChevronLeft, ChevronRight } from "lucide-react";
 import { formatCPF, formatPhone } from "@/lib/format";
 import { DatePickerField } from "@/components/ui/date-picker-field";
+import { cn } from "@/lib/utils";
 
 const SEM_EQUIPE = "__sem_equipe__";
-const NOVO_CORRETOR = "__novo__";
+
+const STEPS = [
+  { title: "Acesso", desc: "Etapa 1 de 3 — identificação, função e equipe." },
+  { title: "Dados pessoais", desc: "Etapa 2 de 3 — documentos e contato (opcional)." },
+  { title: "Comissão", desc: "Etapa 3 de 3 — split do corretor e conclusão." },
+];
 
 interface Props {
   triggerLabel?: string;
@@ -26,7 +31,8 @@ export default function CadastroUnificadoDialog({ triggerLabel = "Cadastrar usu�
   const [open, setOpen] = useState(false);
   const [role, setRole] = useState("corretor");
   const [equipeId, setEquipeId] = useState(SEM_EQUIPE);
-  const [vinculo, setVinculo] = useState(NOVO_CORRETOR);
+  const [step, setStep] = useState(0);
+  const formRef = useRef<HTMLFormElement>(null);
   const [resultado, setResultado] = useState<{ email: string; password: string } | null>(null);
   const [copiado, setCopiado] = useState(false);
 
@@ -38,21 +44,26 @@ export default function CadastroUnificadoDialog({ triggerLabel = "Cadastrar usu�
     },
   });
 
-  const { data: corretoresSemLogin = [] } = useQuery({
-    queryKey: ["corretores-sem-login"],
-    queryFn: async () => {
-      const { data } = await supabase.from("corretores").select("id, nome").is("user_id", null).order("nome");
-      return data ?? [];
-    },
-  });
-
   const reset = () => {
     setResultado(null);
     setRole("corretor");
     setEquipeId(SEM_EQUIPE);
-    setVinculo(NOVO_CORRETOR);
+    setStep(0);
     setCopiado(false);
   };
+
+  function avancar() {
+    if (step === 0) {
+      const fd = new FormData(formRef.current!);
+      const nome = String(fd.get("nome") ?? "").trim();
+      const email = String(fd.get("email") ?? "").trim();
+      if (!nome || !email) {
+        toast({ title: "Complete a etapa", description: "Informe nome e e-mail de acesso.", variant: "destructive" });
+        return;
+      }
+    }
+    setStep((s) => Math.min(s + 1, STEPS.length - 1));
+  }
 
   const cadastrar = useMutation({
     mutationFn: async (fd: FormData) => {
@@ -62,8 +73,8 @@ export default function CadastroUnificadoDialog({ triggerLabel = "Cadastrar usu�
           email: fd.get("email"),
           role,
           equipe_id: equipeId === SEM_EQUIPE ? null : equipeId,
-          corretor_id_existente: vinculo === NOVO_CORRETOR ? null : vinculo,
-          criar_corretor: role !== "diretor" || vinculo !== NOVO_CORRETOR,
+          corretor_id_existente: null,
+          criar_corretor: role !== "diretor",
           comissao_percentual: fd.get("comissao_percentual"),
           cpf: fd.get("cpf"),
           creci: fd.get("creci"),
@@ -134,10 +145,37 @@ export default function CadastroUnificadoDialog({ triggerLabel = "Cadastrar usu�
           </div>
         ) : (
           <form
+            ref={formRef}
             className="space-y-5"
             onSubmit={(e) => { e.preventDefault(); cadastrar.mutate(new FormData(e.currentTarget)); }}
           >
-            <div className="grid gap-4 sm:grid-cols-2">
+            {/* Stepper */}
+            <div className="flex items-center gap-2">
+              {STEPS.map((s, i) => (
+                <div key={s.title} className="flex flex-1 items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => i < step && setStep(i)}
+                    className={cn(
+                      "flex h-7 w-7 shrink-0 items-center justify-center rounded-full border text-xs font-semibold transition-colors",
+                      i === step && "border-primary bg-primary text-primary-foreground",
+                      i < step && "border-primary bg-primary/10 text-primary",
+                      i > step && "text-muted-foreground"
+                    )}
+                  >
+                    {i < step ? <Check className="h-3.5 w-3.5" /> : i + 1}
+                  </button>
+                  <span className={cn("hidden text-xs sm:block", i === step ? "font-medium" : "text-muted-foreground")}>
+                    {s.title}
+                  </span>
+                  {i < STEPS.length - 1 && <div className="h-px flex-1 bg-border" />}
+                </div>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground">{STEPS[step].desc}</p>
+
+            {/* Etapa 1 — Acesso */}
+            <div className={cn("grid gap-4 sm:grid-cols-2", step !== 0 && "hidden")}>
               <div className="space-y-2">
                 <Label>Nome completo *</Label>
                 <Input name="nome" required maxLength={120} placeholder="Nome do usuário" />
@@ -174,29 +212,8 @@ export default function CadastroUnificadoDialog({ triggerLabel = "Cadastrar usu�
               </div>
             </div>
 
-            <Separator />
-
-            <div className="space-y-2">
-              <Label>Ficha de corretor</Label>
-              <Select value={vinculo} onValueChange={setVinculo}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={NOVO_CORRETOR}>Criar nova ficha</SelectItem>
-                  {corretoresSemLogin.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>Vincular a: {c.nome}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground">
-                Corretores já cadastrados sem login aparecem aqui — evita ficha duplicada.
-              </p>
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              <div className="space-y-2">
-                <Label>Split do corretor (%)</Label>
-                <Input name="comissao_percentual" type="number" step="0.01" min={0} max={100} defaultValue={50} />
-              </div>
+            {/* Etapa 2 — Dados pessoais */}
+            <div className={cn("grid gap-4 sm:grid-cols-2", step !== 1 && "hidden")}>
               <div className="space-y-2">
                 <Label>CPF</Label>
                 <Input
@@ -209,8 +226,8 @@ export default function CadastroUnificadoDialog({ triggerLabel = "Cadastrar usu�
                 />
               </div>
               <div className="space-y-2">
-                <Label>CRECI</Label>
-                <Input name="creci" maxLength={30} />
+                <Label>Data de nascimento</Label>
+                <DatePickerField name="data_nascimento" placeholder="dd/mm/aaaa" />
               </div>
               <div className="space-y-2">
                 <Label>Telefone</Label>
@@ -228,18 +245,46 @@ export default function CadastroUnificadoDialog({ triggerLabel = "Cadastrar usu�
                 <Input name="email_pessoal" type="email" maxLength={255} />
               </div>
               <div className="space-y-2">
-                <Label>Data de nascimento</Label>
-                <DatePickerField name="data_nascimento" placeholder="dd/mm/aaaa" />
+                <Label>CRECI</Label>
+                <Input name="creci" maxLength={30} />
+              </div>
+              <p className="text-xs text-muted-foreground sm:col-span-2">
+                O CPF fica em armazenamento protegido: gerentes veem apenas os dígitos mascarados.
+              </p>
+            </div>
+
+            {/* Etapa 3 — Comissão */}
+            <div className={cn("space-y-4", step !== 2 && "hidden")}>
+              <div className="space-y-2 sm:max-w-xs">
+                <Label>Split do corretor (%)</Label>
+                <Input name="comissao_percentual" type="number" step="0.01" min={0} max={100} defaultValue={50} />
+                <p className="text-xs text-muted-foreground">
+                  Percentual da comissão bruta que fica com o corretor nas vendas dele.
+                </p>
+              </div>
+              <div className="rounded-md border bg-muted/40 p-3 text-sm">
+                <p className="font-medium">Ao concluir</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Serão criados: login de acesso, ficha de corretor, dados pessoais, equipe e função — tudo em uma única
+                  ação. Se qualquer etapa falhar, nada é gravado.
+                </p>
               </div>
             </div>
 
-            <p className="text-xs text-muted-foreground">
-              O CPF fica em armazenamento protegido: gerentes veem apenas os dígitos mascarados.
-            </p>
-
-            <Button type="submit" className="w-full" disabled={cadastrar.isPending}>
-              {cadastrar.isPending ? "Cadastrando..." : "Cadastrar usuário"}
-            </Button>
+            <div className="flex items-center justify-between gap-2">
+              <Button type="button" variant="ghost" disabled={step === 0} onClick={() => setStep((s) => s - 1)}>
+                <ChevronLeft className="mr-1 h-4 w-4" />Voltar
+              </Button>
+              {step < STEPS.length - 1 ? (
+                <Button type="button" onClick={avancar}>
+                  Continuar<ChevronRight className="ml-1 h-4 w-4" />
+                </Button>
+              ) : (
+                <Button type="submit" disabled={cadastrar.isPending}>
+                  {cadastrar.isPending ? "Cadastrando..." : "Cadastrar usuário"}
+                </Button>
+              )}
+            </div>
           </form>
         )}
       </DialogContent>
