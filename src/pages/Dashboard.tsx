@@ -264,9 +264,9 @@ export default function Dashboard() {
                 <YAxis tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} className="text-xs" />
                 <Tooltip formatter={(v: number) => formatCurrency(v)} />
                 <Legend />
-                <Bar dataKey="corretores" name="Corretores" stackId="a" fill="#10b981" />
-                <Bar dataKey="gestores" name="Gestores" stackId="a" fill="#f59e0b" />
-                <Bar dataKey="voluire" name="Voluire" stackId="a" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="corretores" name="Corretores" fill="#10b981" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="gestores" name="Gestores" fill="#f59e0b" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="voluire" name="Voluire" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
