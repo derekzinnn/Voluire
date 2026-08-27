@@ -9,9 +9,9 @@ import { useToast } from "@/hooks/use-toast";
 import { UserCheck, Shield, Link2, Unlink } from "lucide-react";
 import type { AppRole } from "@/hooks/useUserRole";
 import EquipesManager from "@/components/EquipesManager";
-import OnboardingEtapasManager from "@/components/OnboardingEtapasManager";
 import GestorFaixasManager from "@/components/GestorFaixasManager";
 import VincularUsuarioDialog from "@/components/VincularUsuarioDialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const ROLE_LABELS: Record<string, string> = {
   diretor: "Diretor",
@@ -113,13 +113,17 @@ export default function GestaoUsuarios() {
 
 
   return (
-    <div className="space-y-6">
-      {/* Cadastro unificado: login + ficha + equipe + função */}
-      <div className="flex justify-end">
+    <Tabs defaultValue="usuarios" className="space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <TabsList>
+          <TabsTrigger value="usuarios">Usuários e permissões</TabsTrigger>
+          <TabsTrigger value="equipes">Equipes</TabsTrigger>
+          <TabsTrigger value="comissoes">Comissões</TabsTrigger>
+        </TabsList>
         <VincularUsuarioDialog />
       </div>
 
-
+      <TabsContent value="usuarios" className="space-y-6">
       {/* Users & Roles */}
       <Card>
         <CardHeader>
@@ -210,13 +214,6 @@ export default function GestaoUsuarios() {
         </CardContent>
       </Card>
 
-      <EquipesManager />
-
-      <GestorFaixasManager />
-
-      <OnboardingEtapasManager />
-
-
       {/* Unlinked corretores */}
       <Card>
         <CardHeader>
@@ -233,7 +230,16 @@ export default function GestaoUsuarios() {
           </div>
         </CardContent>
       </Card>
-    </div>
+      </TabsContent>
+
+      <TabsContent value="equipes">
+        <EquipesManager />
+      </TabsContent>
+
+      <TabsContent value="comissoes">
+        <GestorFaixasManager />
+      </TabsContent>
+    </Tabs>
   );
 }
 
