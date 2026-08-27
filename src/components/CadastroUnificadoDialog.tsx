@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -6,14 +6,19 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Check, Copy, UserPlus } from "lucide-react";
+import { Plus, Check, Copy, UserPlus, ChevronLeft, ChevronRight } from "lucide-react";
 import { formatCPF, formatPhone } from "@/lib/format";
 import { DatePickerField } from "@/components/ui/date-picker-field";
+import { cn } from "@/lib/utils";
 
 const SEM_EQUIPE = "__sem_equipe__";
-const NOVO_CORRETOR = "__novo__";
+
+const STEPS = [
+  { title: "Acesso", desc: "Etapa 1 de 3 — identificação, função e equipe." },
+  { title: "Dados pessoais", desc: "Etapa 2 de 3 — documentos e contato (opcional)." },
+  { title: "Comissão", desc: "Etapa 3 de 3 — split do corretor e conclusão." },
+];
 
 interface Props {
   triggerLabel?: string;
