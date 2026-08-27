@@ -546,7 +546,7 @@ export default function Vendas() {
               {form.forma_pagamento === "a_vista" && (
                 <div className="space-y-2">
                   <Label>Recebimento previsto</Label>
-                  <Input type="date" value={form.primeira_parcela} onChange={(e) => set("primeira_parcela", e.target.value)} />
+                  <DatePickerField value={form.primeira_parcela} onChange={(v) => set("primeira_parcela", v)} />
                 </div>
               )}
               <div className="space-y-2 sm:col-span-2">
