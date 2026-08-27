@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { formatCurrency, MESES, parseLocalDate } from "@/lib/format";
+import { formatCurrency, formatCurrencyInput, parseCurrencyInput, MESES, parseLocalDate } from "@/lib/format";
 import { FORMA_PAGAMENTO_LABELS } from "@/lib/vendas";
 import { Plus, Trash2, TrendingUp, TrendingDown, Wallet } from "lucide-react";
 import { Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Line, ComposedChart } from "recharts";
@@ -59,7 +59,7 @@ export default function Financeiro() {
       const { error } = await supabase.from("despesas").insert({
         categoria: formData.get("categoria") as string,
         descricao: formData.get("descricao") as string || null,
-        valor: Number(formData.get("valor")),
+        valor: parseCurrencyInput(formData.get("valor") as string),
         mes: Number(formData.get("mes")),
         ano: anoNum,
         tipo: formData.get("tipo") as string,
@@ -438,7 +438,7 @@ export default function Financeiro() {
                 <div className="space-y-2"><Label>Categoria</Label><Input name="categoria" required /></div>
                 <div className="space-y-2"><Label>Descrição</Label><Input name="descricao" /></div>
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2"><Label>Valor (R$)</Label><Input name="valor" type="number" step="0.01" required /></div>
+                  <div className="space-y-2"><Label>Valor (R$)</Label><Input name="valor" inputMode="numeric" placeholder="0,00" required onChange={(e) => { e.target.value = formatCurrencyInput(e.target.value); }} /></div>
                   <div className="space-y-2">
                     <Label>Mês</Label>
                     <Select name="mes" defaultValue={filtroMes}>

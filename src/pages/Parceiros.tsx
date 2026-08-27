@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { formatPercent } from "@/lib/format";
+import { formatPercent, formatCNPJ, formatPhone } from "@/lib/format";
 import { useToast } from "@/hooks/use-toast";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Plus, Pencil, Trash2 } from "lucide-react";
@@ -125,10 +125,10 @@ export default function Parceiros() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-2"><Label>CNPJ</Label><Input value={form.cnpj} onChange={(e) => set("cnpj", e.target.value)} /></div>
+              <div className="space-y-2"><Label>CNPJ</Label><Input value={form.cnpj} maxLength={18} placeholder="00.000.000/0000-00" onChange={(e) => set("cnpj", formatCNPJ(e.target.value))} /></div>
               <div className="space-y-2"><Label>CRECI</Label><Input value={form.creci} onChange={(e) => set("creci", e.target.value)} /></div>
               <div className="space-y-2"><Label>Pix</Label><Input value={form.pix} onChange={(e) => set("pix", e.target.value)} /></div>
-              <div className="space-y-2"><Label>Telefone</Label><Input value={form.telefone} onChange={(e) => set("telefone", e.target.value)} /></div>
+              <div className="space-y-2"><Label>Telefone</Label><Input value={form.telefone} maxLength={15} placeholder="(51) 90000-0000" onChange={(e) => set("telefone", formatPhone(e.target.value))} /></div>
               <div className="space-y-2"><Label>E-mail</Label><Input type="email" value={form.email} onChange={(e) => set("email", e.target.value)} /></div>
               <div className="space-y-2">
                 <Label>Comissão padrão (%)</Label>
