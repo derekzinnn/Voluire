@@ -1,0 +1,1 @@
+DROP TABLE IF EXISTS public.onboarding_progresso; DROP TABLE IF EXISTS public.onboarding_etapas;
