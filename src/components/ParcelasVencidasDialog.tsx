@@ -90,9 +90,10 @@ export default function ParcelasVencidasDialog({ open, onOpenChange }: Props = {
   });
 
   const fila = useMemo(
-    () => (pendentes as any[]).filter((p) => !skips.includes(p.id)),
-    [pendentes, skips]
+    () => (controlado ? (pendentes as any[]) : (pendentes as any[]).filter((p) => !skips.includes(p.id))),
+    [pendentes, skips, controlado]
   );
+
 
   const totalPaginas = Math.max(1, Math.ceil(fila.length / PAGE_SIZE));
   const paginaAtual = Math.min(pagina, totalPaginas - 1);
