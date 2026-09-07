@@ -154,7 +154,7 @@ export default function ParcelasVencidasDialog({ open, onOpenChange }: Props = {
   const dataDate = novaData ? new Date(novaData + "T12:00:00") : undefined;
 
   return (
-    <Dialog open onOpenChange={() => setFechado(true)}>
+    <Dialog open onOpenChange={(v) => (controlado ? onOpenChange?.(v) : setFechado(true))}>
       <DialogContent className="max-w-xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -162,12 +162,14 @@ export default function ParcelasVencidasDialog({ open, onOpenChange }: Props = {
             Parcelas em atraso
           </DialogTitle>
           <DialogDescription>
-            {fila.length} parcela{fila.length > 1 ? "s" : ""} com vencimento até hoje —{" "}
-            {formatCurrency(totalAberto)} em aberto. Clique em uma parcela para confirmar.
+            {fila.length === 0
+              ? "Nenhuma parcela em atraso no momento."
+              : `${fila.length} parcela${fila.length > 1 ? "s" : ""} com vencimento até hoje — ${formatCurrency(totalAberto)} em aberto. Clique em uma parcela para confirmar.`}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-2">
+
           {visiveis.map((p: any) => {
             const venda = p.vendas ?? {};
             const expandida = aberta === p.id;
