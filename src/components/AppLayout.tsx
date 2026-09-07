@@ -3,14 +3,15 @@ import { Link, useLocation, Navigate } from "react-router-dom";
 import logo from "@/assets/logo.jpg";
 import {
   LayoutDashboard, ShoppingCart, Users,
-  Wallet, Menu, X, LogOut, Settings, UsersRound, Building2, Building
+  Wallet, Menu, X, LogOut, Settings, UsersRound, Building2, Building, Bell
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { useUserRole, canAccessPage } from "@/hooks/useUserRole";
 import ChangePasswordDialog from "@/components/ChangePasswordDialog";
-import ParcelasVencidasDialog from "@/components/ParcelasVencidasDialog";
+import ParcelasVencidasDialog, { useParcelasVencidasCount } from "@/components/ParcelasVencidasDialog";
+
 
 const navItems = [
   { to: "/", icon: LayoutDashboard, label: "Dashboard" },
@@ -26,8 +27,11 @@ const navItems = [
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [avisosOpen, setAvisosOpen] = useState(false);
   const location = useLocation();
-  const { role, loading: roleLoading } = useUserRole();
+  const { role, loading: roleLoading, isGestor } = useUserRole();
+  const qtdAtrasadas = useParcelasVencidasCount();
+
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -92,12 +96,28 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
         </nav>
         <div className="p-4 border-t border-sidebar-border space-y-1">
+          {isGestor && (
+            <Button
+              variant="ghost"
+              className="w-full justify-start gap-3 text-sidebar-foreground/70 hover:text-sidebar-foreground"
+              onClick={() => setAvisosOpen(true)}
+            >
+              <Bell className="h-5 w-5" />
+              Parcelas em atraso
+              {qtdAtrasadas > 0 && (
+                <span className="ml-auto rounded-full bg-destructive px-2 py-0.5 text-xs font-semibold text-destructive-foreground">
+                  {qtdAtrasadas}
+                </span>
+              )}
+            </Button>
+          )}
           <ChangePasswordDialog />
           <Button variant="ghost" className="w-full justify-start gap-3 text-sidebar-foreground/70 hover:text-sidebar-foreground" onClick={handleLogout}>
             <LogOut className="h-5 w-5" />
             Sair
           </Button>
         </div>
+
       </aside>
 
       <div className="flex flex-1 flex-col overflow-hidden">
@@ -114,6 +134,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </main>
       </div>
       <ParcelasVencidasDialog />
+      <ParcelasVencidasDialog open={avisosOpen} onOpenChange={setAvisosOpen} />
+
     </div>
   );
 }

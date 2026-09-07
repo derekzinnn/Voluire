@@ -34,7 +34,33 @@ function addSkip(id: string) {
   sessionStorage.setItem(SKIP_KEY(), JSON.stringify([...atual, id]));
 }
 
-export default function ParcelasVencidasDialog() {
+export function useParcelasVencidas() {
+  const { isGestor, loading } = useUserRole();
+  return useQuery({
+    queryKey: ["parcelas-vencidas"],
+    enabled: !loading && isGestor,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("venda_parcelas")
+        .select("id, numero, valor, data_prevista, dias_adiados, tipo, venda_id, vendas(numero_contrato, cliente_nome, forma_pagamento)")
+        .neq("status", "recebida")
+        .lte("data_prevista", hoje())
+        .order("data_prevista");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+}
+
+export function useParcelasVencidasCount() {
+  const { data = [] } = useParcelasVencidas();
+  const skips = lerSkips();
+  return (data as any[]).filter((p) => !skips.includes(p.id)).length;
+}
+
+type Props = { open?: boolean; onOpenChange?: (v: boolean) => void };
+
+export default function ParcelasVencidasDialog({ open, onOpenChange }: Props = {}) {
   const { isGestor, loading } = useUserRole();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -45,6 +71,8 @@ export default function ParcelasVencidasDialog() {
   const [novaData, setNovaData] = useState<string>("");
   const [dias, setDias] = useState("30");
   const [fechado, setFechado] = useState(false);
+  const controlado = open !== undefined;
+
 
   const { data: pendentes = [] } = useQuery({
     queryKey: ["parcelas-vencidas"],
@@ -62,9 +90,10 @@ export default function ParcelasVencidasDialog() {
   });
 
   const fila = useMemo(
-    () => (pendentes as any[]).filter((p) => !skips.includes(p.id)),
-    [pendentes, skips]
+    () => (controlado ? (pendentes as any[]) : (pendentes as any[]).filter((p) => !skips.includes(p.id))),
+    [pendentes, skips, controlado]
   );
+
 
   const totalPaginas = Math.max(1, Math.ceil(fila.length / PAGE_SIZE));
   const paginaAtual = Math.min(pagina, totalPaginas - 1);
@@ -87,7 +116,9 @@ export default function ParcelasVencidasDialog() {
     onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
   });
 
-  if (loading || !isGestor || fila.length === 0 || fechado) return null;
+  if (loading || !isGestor) return null;
+  if (controlado ? !open : fila.length === 0 || fechado) return null;
+
 
   function confirmarPaga(p: any) {
     atualizar.mutate({ id: p.id, patch: { status: "recebida", data_recebimento: hoje() } });
@@ -123,7 +154,7 @@ export default function ParcelasVencidasDialog() {
   const dataDate = novaData ? new Date(novaData + "T12:00:00") : undefined;
 
   return (
-    <Dialog open onOpenChange={() => setFechado(true)}>
+    <Dialog open onOpenChange={(v) => (controlado ? onOpenChange?.(v) : setFechado(true))}>
       <DialogContent className="max-w-xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -131,12 +162,14 @@ export default function ParcelasVencidasDialog() {
             Parcelas em atraso
           </DialogTitle>
           <DialogDescription>
-            {fila.length} parcela{fila.length > 1 ? "s" : ""} com vencimento até hoje —{" "}
-            {formatCurrency(totalAberto)} em aberto. Clique em uma parcela para confirmar.
+            {fila.length === 0
+              ? "Nenhuma parcela em atraso no momento."
+              : `${fila.length} parcela${fila.length > 1 ? "s" : ""} com vencimento até hoje — ${formatCurrency(totalAberto)} em aberto. Clique em uma parcela para confirmar.`}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-2">
+
           {visiveis.map((p: any) => {
             const venda = p.vendas ?? {};
             const expandida = aberta === p.id;
