@@ -116,7 +116,9 @@ export default function ParcelasVencidasDialog({ open, onOpenChange }: Props = {
     onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
   });
 
-  if (loading || !isGestor || fila.length === 0 || fechado) return null;
+  if (loading || !isGestor) return null;
+  if (controlado ? !open : fila.length === 0 || fechado) return null;
+
 
   function confirmarPaga(p: any) {
     atualizar.mutate({ id: p.id, patch: { status: "recebida", data_recebimento: hoje() } });
