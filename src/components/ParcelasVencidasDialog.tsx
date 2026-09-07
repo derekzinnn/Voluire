@@ -12,10 +12,12 @@ import { Calendar } from "@/components/ui/calendar";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { useToast } from "@/hooks/use-toast";
 import { useUserRole } from "@/hooks/useUserRole";
-import { CalendarIcon, AlertCircle } from "lucide-react";
+import { CalendarIcon, AlertCircle, ChevronDown, ChevronRight } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale/pt-BR";
+import { cn } from "@/lib/utils";
 
+const PAGE_SIZE = 5;
 const hoje = () => new Date().toISOString().split("T")[0];
 const SKIP_KEY = () => `parcelas-adiadas-hoje:${hoje()}`;
 
@@ -38,9 +40,11 @@ export default function ParcelasVencidasDialog() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [skips, setSkips] = useState<string[]>(() => lerSkips());
-  const [modoNaoPaga, setModoNaoPaga] = useState(false);
+  const [aberta, setAberta] = useState<string | null>(null);
+  const [pagina, setPagina] = useState(0);
   const [novaData, setNovaData] = useState<string>("");
   const [dias, setDias] = useState("30");
+  const [fechado, setFechado] = useState(false);
 
   const { data: pendentes = [] } = useQuery({
     queryKey: ["parcelas-vencidas"],
@@ -61,7 +65,11 @@ export default function ParcelasVencidasDialog() {
     () => (pendentes as any[]).filter((p) => !skips.includes(p.id)),
     [pendentes, skips]
   );
-  const atual = fila[0];
+
+  const totalPaginas = Math.max(1, Math.ceil(fila.length / PAGE_SIZE));
+  const paginaAtual = Math.min(pagina, totalPaginas - 1);
+  const visiveis = fila.slice(paginaAtual * PAGE_SIZE, paginaAtual * PAGE_SIZE + PAGE_SIZE);
+  const totalAberto = fila.reduce((s, p: any) => s + Number(p.valor || 0), 0);
 
   const atualizar = useMutation({
     mutationFn: async ({ id, patch }: { id: string; patch: any }) => {
@@ -72,150 +80,172 @@ export default function ParcelasVencidasDialog() {
       queryClient.invalidateQueries({ queryKey: ["parcelas-vencidas"] });
       queryClient.invalidateQueries({ queryKey: ["venda-parcelas"] });
       queryClient.invalidateQueries({ queryKey: ["vendas"] });
-      setModoNaoPaga(false);
+      setAberta(null);
       setNovaData("");
       setDias("30");
     },
     onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
   });
 
-  if (loading || !isGestor || !atual) return null;
+  if (loading || !isGestor || fila.length === 0 || fechado) return null;
 
-  const venda = atual.vendas ?? {};
-  const dataDate = novaData ? new Date(novaData + "T12:00:00") : undefined;
-
-  function confirmarPaga() {
-    atualizar.mutate({
-      id: atual.id,
-      patch: { status: "recebida", data_recebimento: hoje() },
-    });
+  function confirmarPaga(p: any) {
+    atualizar.mutate({ id: p.id, patch: { status: "recebida", data_recebimento: hoje() } });
     toast({ title: "Parcela marcada como paga" });
   }
 
-  function reagendarPorDias() {
+  function reagendarPorDias(p: any) {
     const n = Number(dias);
     if (!n || n < 1) return;
-    const d = new Date(atual.data_prevista + "T12:00:00");
+    const d = new Date(p.data_prevista + "T12:00:00");
     d.setDate(d.getDate() + n);
     atualizar.mutate({
-      id: atual.id,
+      id: p.id,
       patch: {
         data_prevista: d.toISOString().split("T")[0],
-        dias_adiados: (atual.dias_adiados || 0) + n,
+        dias_adiados: (p.dias_adiados || 0) + n,
         status: "adiada",
       },
     });
   }
 
-  function reagendarPorData() {
+  function reagendarPorData(p: any) {
     if (!novaData) return;
-    atualizar.mutate({
-      id: atual.id,
-      patch: { data_prevista: novaData, status: "adiada" },
-    });
+    atualizar.mutate({ id: p.id, patch: { data_prevista: novaData, status: "adiada" } });
   }
 
-  function pularAgora() {
-    addSkip(atual.id);
+  function pular(p: any) {
+    addSkip(p.id);
     setSkips(lerSkips());
-    setModoNaoPaga(false);
+    setAberta(null);
   }
+
+  const dataDate = novaData ? new Date(novaData + "T12:00:00") : undefined;
 
   return (
-    <Dialog open onOpenChange={() => {}}>
-      <DialogContent className="max-w-lg" onInteractOutside={(e) => e.preventDefault()}>
+    <Dialog open onOpenChange={() => setFechado(true)}>
+      <DialogContent className="max-w-xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <AlertCircle className="h-5 w-5 text-amber-500" />
-            Parcela paga ou não?
+            Parcelas em atraso
           </DialogTitle>
           <DialogDescription>
-            {fila.length > 1
-              ? `${fila.length} parcelas com vencimento até hoje aguardam confirmação.`
-              : "Confirme o recebimento desta parcela para atualizar o fluxo de caixa."}
+            {fila.length} parcela{fila.length > 1 ? "s" : ""} com vencimento até hoje —{" "}
+            {formatCurrency(totalAberto)} em aberto. Clique em uma parcela para confirmar.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-2 rounded-lg border p-4 text-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-muted-foreground">Contrato</span>
-            <span className="font-medium">{venda.numero_contrato ?? "—"}</span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-muted-foreground">Cliente</span>
-            <span className="font-medium">{venda.cliente_nome ?? "—"}</span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-muted-foreground">Parcela</span>
-            <span className="font-medium">
-              #{atual.numero} — {formatCurrency(Number(atual.valor))}
-            </span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-muted-foreground">Vencimento</span>
-            <span className="font-medium">
-              {formatDate(atual.data_prevista)}{" "}
-              {atual.data_prevista < hoje() && <Badge variant="destructive" className="ml-1">Em atraso</Badge>}
-            </span>
-          </div>
+        <div className="space-y-2">
+          {visiveis.map((p: any) => {
+            const venda = p.vendas ?? {};
+            const expandida = aberta === p.id;
+            return (
+              <div key={p.id} className="rounded-lg border">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAberta(expandida ? null : p.id);
+                    setNovaData("");
+                    setDias("30");
+                  }}
+                  className={cn(
+                    "flex w-full items-center gap-3 px-3 py-2.5 text-left text-sm transition-colors hover:bg-muted/50",
+                    expandida && "bg-muted/40"
+                  )}
+                >
+                  {expandida ? <ChevronDown className="h-4 w-4 shrink-0" /> : <ChevronRight className="h-4 w-4 shrink-0" />}
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-medium">
+                      {venda.numero_contrato ?? "—"} · {venda.cliente_nome ?? "—"}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Parcela #{p.numero} · vence {formatDate(p.data_prevista)}
+                    </p>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <span className="font-medium">{formatCurrency(Number(p.valor))}</span>
+                    {p.data_prevista < hoje() && <Badge variant="destructive">Em atraso</Badge>}
+                  </div>
+                </button>
+
+                {expandida && (
+                  <div className="space-y-4 border-t p-3">
+                    <div className="flex flex-wrap gap-2">
+                      <Button size="sm" onClick={() => confirmarPaga(p)} disabled={atualizar.isPending}>
+                        Sim, foi paga
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => pular(p)}>
+                        Decidir depois
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          pular(p);
+                          navigate("/vendas");
+                        }}
+                      >
+                        Editar parcelas do contrato
+                      </Button>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-xs">Não foi paga — adiar por quantos dias?</Label>
+                      <div className="flex gap-2">
+                        <Input type="number" min="1" value={dias} onChange={(e) => setDias(e.target.value)} className="h-9" />
+                        <Button size="sm" variant="outline" onClick={() => reagendarPorDias(p)} disabled={atualizar.isPending}>
+                          Adiar
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-xs">Ou nova data de vencimento</Label>
+                      <div className="flex gap-2">
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button variant="outline" size="sm" className="flex-1 justify-start font-normal">
+                              <CalendarIcon className="mr-2 h-4 w-4" />
+                              {dataDate ? format(dataDate, "dd/MM/yyyy", { locale: ptBR }) : "Selecione"}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0 pointer-events-auto" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={dataDate}
+                              onSelect={(d) => setNovaData(d ? format(d, "yyyy-MM-dd") : "")}
+                              locale={ptBR}
+                              initialFocus
+                            />
+                          </PopoverContent>
+                        </Popover>
+                        <Button size="sm" variant="outline" onClick={() => reagendarPorData(p)} disabled={!novaData || atualizar.isPending}>
+                          Salvar
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
 
-        {!modoNaoPaga ? (
-          <DialogFooter className="flex-col gap-2 sm:flex-row">
-            <Button variant="ghost" onClick={pularAgora}>Decidir depois</Button>
-            <Button variant="outline" onClick={() => setModoNaoPaga(true)}>Não foi paga</Button>
-            <Button onClick={confirmarPaga} disabled={atualizar.isPending}>Sim, foi paga</Button>
-          </DialogFooter>
-        ) : (
-          <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Configure a parcela: adie por um número de dias ou defina uma nova data de vencimento.
-            </p>
-            <div className="space-y-2">
-              <Label>Adiar por quantos dias?</Label>
-              <div className="flex gap-2">
-                <Input type="number" min="1" value={dias} onChange={(e) => setDias(e.target.value)} />
-                <Button variant="outline" onClick={reagendarPorDias} disabled={atualizar.isPending}>Adiar</Button>
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label>Ou nova data de vencimento</Label>
-              <div className="flex gap-2">
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" className="flex-1 justify-start font-normal">
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {dataDate ? format(dataDate, "dd/MM/yyyy", { locale: ptBR }) : "Selecione"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0 pointer-events-auto" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={dataDate}
-                      onSelect={(d) => setNovaData(d ? format(d, "yyyy-MM-dd") : "")}
-                      locale={ptBR}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
-                <Button variant="outline" onClick={reagendarPorData} disabled={!novaData || atualizar.isPending}>
-                  Salvar
-                </Button>
-              </div>
-            </div>
-            <DialogFooter className="flex-col gap-2 sm:flex-row">
-              <Button variant="ghost" onClick={() => setModoNaoPaga(false)}>Voltar</Button>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  pularAgora();
-                  navigate("/vendas");
-                }}
-              >
-                Editar parcelas do contrato
+        {totalPaginas > 1 && (
+          <DialogFooter className="flex-row items-center justify-between sm:justify-between">
+            <span className="text-xs text-muted-foreground">
+              Página {paginaAtual + 1} de {totalPaginas}
+            </span>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" disabled={paginaAtual === 0} onClick={() => { setPagina(paginaAtual - 1); setAberta(null); }}>
+                Anterior
               </Button>
-            </DialogFooter>
-          </div>
+              <Button variant="outline" size="sm" disabled={paginaAtual >= totalPaginas - 1} onClick={() => { setPagina(paginaAtual + 1); setAberta(null); }}>
+                Próxima
+              </Button>
+            </div>
+          </DialogFooter>
         )}
       </DialogContent>
     </Dialog>
