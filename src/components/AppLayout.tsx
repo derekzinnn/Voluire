@@ -134,6 +134,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </main>
       </div>
       <ParcelasVencidasDialog />
+      <ParcelasVencidasDialog open={avisosOpen} onOpenChange={setAvisosOpen} />
+
     </div>
   );
 }
