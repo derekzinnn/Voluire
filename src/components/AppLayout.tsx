@@ -27,8 +27,11 @@ const navItems = [
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [avisosOpen, setAvisosOpen] = useState(false);
   const location = useLocation();
-  const { role, loading: roleLoading } = useUserRole();
+  const { role, loading: roleLoading, isGestor } = useUserRole();
+  const qtdAtrasadas = useParcelasVencidasCount();
+
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
