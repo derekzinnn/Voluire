@@ -3,14 +3,15 @@ import { Link, useLocation, Navigate } from "react-router-dom";
 import logo from "@/assets/logo.jpg";
 import {
   LayoutDashboard, ShoppingCart, Users,
-  Wallet, Menu, X, LogOut, Settings, UsersRound, Building2, Building
+  Wallet, Menu, X, LogOut, Settings, UsersRound, Building2, Building, Bell
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { useUserRole, canAccessPage } from "@/hooks/useUserRole";
 import ChangePasswordDialog from "@/components/ChangePasswordDialog";
-import ParcelasVencidasDialog from "@/components/ParcelasVencidasDialog";
+import ParcelasVencidasDialog, { useParcelasVencidasCount } from "@/components/ParcelasVencidasDialog";
+
 
 const navItems = [
   { to: "/", icon: LayoutDashboard, label: "Dashboard" },
