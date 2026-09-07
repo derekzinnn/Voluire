@@ -34,7 +34,33 @@ function addSkip(id: string) {
   sessionStorage.setItem(SKIP_KEY(), JSON.stringify([...atual, id]));
 }
 
-export default function ParcelasVencidasDialog() {
+export function useParcelasVencidas() {
+  const { isGestor, loading } = useUserRole();
+  return useQuery({
+    queryKey: ["parcelas-vencidas"],
+    enabled: !loading && isGestor,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("venda_parcelas")
+        .select("id, numero, valor, data_prevista, dias_adiados, tipo, venda_id, vendas(numero_contrato, cliente_nome, forma_pagamento)")
+        .neq("status", "recebida")
+        .lte("data_prevista", hoje())
+        .order("data_prevista");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+}
+
+export function useParcelasVencidasCount() {
+  const { data = [] } = useParcelasVencidas();
+  const skips = lerSkips();
+  return (data as any[]).filter((p) => !skips.includes(p.id)).length;
+}
+
+type Props = { open?: boolean; onOpenChange?: (v: boolean) => void };
+
+export default function ParcelasVencidasDialog({ open, onOpenChange }: Props = {}) {
   const { isGestor, loading } = useUserRole();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -45,6 +71,8 @@ export default function ParcelasVencidasDialog() {
   const [novaData, setNovaData] = useState<string>("");
   const [dias, setDias] = useState("30");
   const [fechado, setFechado] = useState(false);
+  const controlado = open !== undefined;
+
 
   const { data: pendentes = [] } = useQuery({
     queryKey: ["parcelas-vencidas"],
