@@ -601,6 +601,36 @@ export default function Vendas() {
                 />
               </div>
               <div className="space-y-2">
+                <Label>Venda em parceria? *</Label>
+                <Select
+                  value={form.tem_parceria ? "sim" : "nao"}
+                  onValueChange={(v) => {
+                    const sim = v === "sim";
+                    set("tem_parceria", sim);
+                    if (!sim) {
+                      set("parceria_nome", "");
+                      set("comissao_percentual_bruta", "6");
+                    }
+                  }}
+                >
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="nao">Não — comissão de 6%</SelectItem>
+                    <SelectItem value="sim">Sim — comissão diferente</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              {form.tem_parceria && (
+                <div className="space-y-2">
+                  <Label>Nome do parceiro *</Label>
+                  <Input
+                    value={form.parceria_nome}
+                    onChange={(e) => set("parceria_nome", e.target.value)}
+                    placeholder="Quem entrou na parceria"
+                  />
+                </div>
+              )}
+              <div className="space-y-2">
                 <Label>Comissão bruta (%) *</Label>
                 <div className="flex items-center gap-2">
                   <Input
@@ -608,12 +638,17 @@ export default function Vendas() {
                     step="0.01"
                     min="0"
                     className="w-28"
+                    disabled={!form.tem_parceria}
                     value={form.comissao_percentual_bruta}
                     onChange={(e) => set("comissao_percentual_bruta", e.target.value)}
                   />
                   <span className="text-sm text-muted-foreground">= {formatCurrency(comissaoBruta)}</span>
                 </div>
-                <p className="text-xs text-muted-foreground">Padrão 6% — ajuste quando o contrato tiver outra taxa.</p>
+                <p className="text-xs text-muted-foreground">
+                  {form.tem_parceria
+                    ? "Parceria: informe o percentual acordado no contrato."
+                    : "Sem parceria: comissão fixa de 6%."}
+                </p>
               </div>
               <div className="rounded-md border p-3 text-sm sm:col-span-2">
                 <p className="font-medium">Como a comissão será distribuída</p>
