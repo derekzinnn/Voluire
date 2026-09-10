@@ -7,22 +7,19 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { UserCheck, Shield, Link2, Unlink } from "lucide-react";
-import type { AppRole } from "@/hooks/useUserRole";
+import { ROLE_LABELS, ROLES_CONFIGURAVEIS, type AppRole } from "@/hooks/useUserRole";
+import CargosPermissoesManager from "@/components/CargosPermissoesManager";
 import EquipesManager from "@/components/EquipesManager";
 
 import VincularUsuarioDialog from "@/components/VincularUsuarioDialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-const ROLE_LABELS: Record<string, string> = {
-  diretor: "Diretor",
-  gerente: "Gerente",
-  corretor: "Corretor",
-};
-
 const ROLE_COLORS: Record<string, string> = {
   diretor: "bg-red-100 text-red-800",
   gerente: "bg-blue-100 text-blue-800",
   corretor: "bg-green-100 text-green-800",
+  financeiro: "bg-amber-100 text-amber-800",
+  administrativo: "bg-purple-100 text-purple-800",
 };
 
 export default function GestaoUsuarios() {
@@ -118,6 +115,7 @@ export default function GestaoUsuarios() {
         <TabsList>
           <TabsTrigger value="usuarios">Usuários e permissões</TabsTrigger>
           <TabsTrigger value="equipes">Equipes</TabsTrigger>
+          <TabsTrigger value="cargos">Cargos e permissões</TabsTrigger>
           
         </TabsList>
         <VincularUsuarioDialog />
@@ -165,8 +163,9 @@ export default function GestaoUsuarios() {
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="diretor">Diretor</SelectItem>
-                          <SelectItem value="gerente">Gerente</SelectItem>
-                          <SelectItem value="corretor">Corretor</SelectItem>
+                          {ROLES_CONFIGURAVEIS.map((r) => (
+                            <SelectItem key={r} value={r}>{ROLE_LABELS[r]}</SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </TableCell>
@@ -234,6 +233,10 @@ export default function GestaoUsuarios() {
 
       <TabsContent value="equipes">
         <EquipesManager />
+      </TabsContent>
+
+      <TabsContent value="cargos">
+        <CargosPermissoesManager />
       </TabsContent>
     </Tabs>
   );
