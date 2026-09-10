@@ -117,7 +117,7 @@ export default function CorretorDetalhe() {
                   Equipe: <span className="text-foreground">{equipeNome ?? "Sem equipe"}</span>
                 </span>
                 <span className="text-muted-foreground">
-                  Split:{" "}
+                  Comissão:{" "}
                   <span className="text-foreground">{formatPercent(Number(corretor.comissao_percentual))}</span>
                 </span>
               </div>

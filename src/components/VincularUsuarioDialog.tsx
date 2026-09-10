@@ -168,7 +168,7 @@ export default function VincularUsuarioDialog({ triggerLabel = "Vincular usuári
               )}
               {selecionado && (
                 <p className="text-xs text-muted-foreground">
-                  Split atual: {Number(selecionado.comissao_percentual)}%
+                  Comissão atual: {Number(selecionado.comissao_percentual)}%
                 </p>
               )}
             </div>

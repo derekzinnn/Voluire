@@ -665,8 +665,8 @@ export default function Vendas() {
                   {isPronto
                     ? descontoAgenciador > 0
                       ? `Imóvel pronto: o agenciador fica com ${descontoAgenciador}% (${formatCurrency(comissaoBruta * descontoAgenciador / 100)}), retirados do percentual do corretor — ${splitCorretor1}% passa a ${Math.max(splitCorretor1 - descontoAgenciador, 0)}%.`
-                      : "Imóvel pronto agenciado pelo próprio corretor: o split da ficha não muda."
-                    : "Corretor conforme o split da ficha e o restante fica com a Voluire."}
+                      : "Imóvel pronto agenciado pelo próprio corretor: a comissão da ficha não muda."
+                    : "Corretor conforme a comissão da ficha e o restante fica com a Voluire."}
                 </p>
               </div>
             </div>
