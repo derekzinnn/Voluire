@@ -880,7 +880,7 @@ export default function Vendas() {
                       </SelectContent>
                     </Select>
                     {form.corretor2_id !== NONE && (
-                      <Input className="w-28" type="number" min="22.5" max="25" step="0.1" value={form.corretor2_part} onChange={(e) => set("corretor2_part", e.target.value)} placeholder="% part." />
+                      <Input className="w-28" type="number" min={isPronto ? "0" : "22.5"} max={isPronto ? "100" : "25"} step="0.1" value={form.corretor2_part} onChange={(e) => set("corretor2_part", e.target.value)} placeholder="% part." />
                     )}
                   </div>
                 </div>
