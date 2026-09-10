@@ -271,6 +271,14 @@ export default function Vendas() {
         ? 10
         : 0;
   const splitCorretor1 = Number(corretores.find((c) => c.id === form.corretor1_id)?.comissao_percentual) || 50;
+  const doisCorretores = form.corretor2_id !== NONE;
+  // Comissão do corretor: primeiro desconta o agenciador, depois divide entre os corretores.
+  const pctFicha = (id: string) => Number(corretores.find((c) => c.id === id)?.comissao_percentual) || 50;
+  const participacaoDe = (id: string) => {
+    const base = Math.max(pctFicha(id) - descontoAgenciador, 0);
+    return doisCorretores ? base / 2 : base;
+  };
+  const fmtPct = (n: number) => n.toFixed(2).replace(/\.?0+$/, "").replace(".", ",");
 
   const salvar = useMutation({
     mutationFn: async () => {
