@@ -741,16 +741,29 @@ export default function Vendas() {
                   )}
                 </div>
               </div>
-              <div className="space-y-2 sm:col-span-2">
-                <Label>{isPronto ? "Agenciador (captador) — 10%" : "Captador"}</Label>
-                <Select value={form.captador_corretor_id} onValueChange={(v) => set("captador_corretor_id", v)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent className="max-h-60">
-                    <SelectItem value={NONE}>Sem captador</SelectItem>
-                    {corretores.map((c) => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
+              {isPronto ? (
+                <div className="rounded-md border p-3 text-sm sm:col-span-2">
+                  <p className="font-medium">Agenciamento</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {form.agenciador_tipo === "voluire"
+                      ? "Voluire agenciou — 5% saem do percentual do corretor."
+                      : form.agenciador_tipo === "corretor"
+                        ? `Agenciado por ${corretores.find((c) => c.id === form.captador_corretor_id)?.nome ?? "—"} — 10% saem do percentual do corretor.`
+                        : "Agenciado pelo próprio corretor — sem desconto."}
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-2 sm:col-span-2">
+                  <Label>Captador</Label>
+                  <Select value={form.captador_corretor_id} onValueChange={(v) => set("captador_corretor_id", v)}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent className="max-h-60">
+                      <SelectItem value={NONE}>Sem captador</SelectItem>
+                      {corretores.map((c) => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
               <div className="space-y-2 sm:col-span-2">
                 <Label>Observação</Label>
                 <Textarea value={form.observacao} onChange={(e) => set("observacao", e.target.value)} rows={2} />
