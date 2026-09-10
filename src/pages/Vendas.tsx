@@ -174,13 +174,6 @@ export default function Vendas() {
       }
       if (!form.corretor1_id) return erro("Selecione o corretor responsável.");
       if (temOutroCorretor && form.corretor2_id === NONE) return erro("Selecione qual foi o outro corretor da venda.");
-      if (form.corretor2_id !== NONE && isPronto) {
-        const p1 = Number(form.corretor1_part) || 0;
-        const p2 = Number(form.corretor2_part) || 0;
-        if (p1 < 0 || p1 > 100) return erro("Participação do corretor responsável deve estar entre 0% e 100%.");
-        if (p2 < 0 || p2 > 100) return erro("Participação do outro corretor deve estar entre 0% e 100%.");
-        if (Math.abs(p1 + p2 - 100) > 0.01) return erro("A participação dos dois corretores deve somar 100%.");
-      }
     }
     if (step === 2) {
       if (!(Number(form.valor) > 0)) return erro("Informe o valor da venda.");
