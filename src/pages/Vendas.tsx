@@ -309,9 +309,15 @@ export default function Vendas() {
       const p1 = Number(form.corretor1_part) || 0;
       const p2 = form.corretor2_id !== NONE ? Number(form.corretor2_part) || 0 : 0;
       if (form.corretor2_id !== NONE) {
-        if (p1 < 22.5 || p1 > 25) throw new Error("Participação do corretor responsável deve estar entre 22,5% e 25%.");
-        if (p2 < 22.5 || p2 > 25) throw new Error("Participação do outro corretor deve estar entre 22,5% e 25%.");
-        if (p1 + p2 > 50) throw new Error("A soma das participações dos corretores não pode ultrapassar 50%.");
+        if (isPronto) {
+          if (p1 < 0 || p1 > 100) throw new Error("Participação do corretor responsável deve estar entre 0% e 100%.");
+          if (p2 < 0 || p2 > 100) throw new Error("Participação do outro corretor deve estar entre 0% e 100%.");
+          if (Math.abs(p1 + p2 - 100) > 0.01) throw new Error("A participação dos dois corretores deve somar 100%.");
+        } else {
+          if (p1 < 22.5 || p1 > 25) throw new Error("Participação do corretor responsável deve estar entre 22,5% e 25%.");
+          if (p2 < 22.5 || p2 > 25) throw new Error("Participação do outro corretor deve estar entre 22,5% e 25%.");
+          if (p1 + p2 > 50) throw new Error("A soma das participações dos corretores não pode ultrapassar 50%.");
+        }
       }
 
       const payload = {
