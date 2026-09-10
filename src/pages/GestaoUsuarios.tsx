@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { UserCheck, Shield, Link2, Unlink } from "lucide-react";
 import type { AppRole } from "@/hooks/useUserRole";
 import EquipesManager from "@/components/EquipesManager";
-import GestorFaixasManager from "@/components/GestorFaixasManager";
+
 import VincularUsuarioDialog from "@/components/VincularUsuarioDialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -118,7 +118,7 @@ export default function GestaoUsuarios() {
         <TabsList>
           <TabsTrigger value="usuarios">Usuários e permissões</TabsTrigger>
           <TabsTrigger value="equipes">Equipes</TabsTrigger>
-          <TabsTrigger value="comissoes">Comissões</TabsTrigger>
+          
         </TabsList>
         <VincularUsuarioDialog />
       </div>
@@ -234,10 +234,6 @@ export default function GestaoUsuarios() {
 
       <TabsContent value="equipes">
         <EquipesManager />
-      </TabsContent>
-
-      <TabsContent value="comissoes">
-        <GestorFaixasManager />
       </TabsContent>
     </Tabs>
   );
