@@ -93,6 +93,7 @@ const STEPS = [
 type FormState = {
   numero_contrato: string;
   cliente_nome: string;
+  vendedor_nome: string;
   unidade: string;
   empreendimento_id: string;
   parceiro_id: string;
@@ -115,6 +116,7 @@ type FormState = {
 const emptyForm = (): FormState => ({
   numero_contrato: "",
   cliente_nome: "",
+  vendedor_nome: "",
   unidade: "",
   empreendimento_id: NONE,
   parceiro_id: NONE,
@@ -154,7 +156,8 @@ export default function Vendas() {
     if (step === 0) {
       if (!form.numero_contrato.trim()) return erro("Informe o número do contrato.");
       if (!form.data_venda) return erro("Informe a data da venda.");
-      if (!form.cliente_nome.trim()) return erro("Informe o cliente.");
+      if (!form.cliente_nome.trim()) return erro("Informe o cliente comprador.");
+      if (isPronto && !form.vendedor_nome.trim()) return erro("Informe o cliente vendedor (proprietário).");
       if (!form.unidade.trim()) return erro("Informe a unidade.");
       if (isPronto) {
         if (form.agenciador_tipo === "corretor" && form.captador_corretor_id === NONE)
@@ -255,6 +258,8 @@ export default function Vendas() {
 
   const empSelecionado = (empreendimentos as any[]).find((e) => e.id === form.empreendimento_id);
   const isPronto = empSelecionado?.tipo === "pronto";
+  const parceiroNome = parceiros.find((p) => p.id === form.parceiro_id)?.nome ?? "";
+  const vendedorFinal = isPronto ? form.vendedor_nome : parceiroNome;
   const pctBruta = Number(form.comissao_percentual_bruta) || 0;
   const comissaoBruta = (Number(form.valor) || 0) * pctBruta / 100;
   const descontoAgenciador = !isPronto
@@ -284,6 +289,7 @@ export default function Vendas() {
       const payload = {
         numero_contrato: form.numero_contrato.trim(),
         cliente_nome: form.cliente_nome,
+        vendedor_nome: vendedorFinal.trim() ? vendedorFinal.trim() : null,
         unidade: form.unidade,
         empreendimento_id: form.empreendimento_id === NONE ? null : form.empreendimento_id,
         parceiro_id: form.parceiro_id === NONE ? null : form.parceiro_id,
@@ -392,6 +398,7 @@ export default function Vendas() {
     setForm({
       numero_contrato: v.numero_contrato ?? "",
       cliente_nome: v.cliente_nome ?? "",
+      vendedor_nome: v.vendedor_nome ?? "",
       unidade: v.unidade ?? "",
       empreendimento_id: v.empreendimento_id ?? NONE,
       parceiro_id: v.parceiro_id ?? NONE,
@@ -485,8 +492,21 @@ export default function Vendas() {
                 <DatePickerField value={form.data_venda} onChange={(v) => set("data_venda", v)} />
               </div>
               <div className="space-y-2">
-                <Label>Cliente *</Label>
-                <Input value={form.cliente_nome} onChange={(e) => set("cliente_nome", e.target.value)} />
+                <Label>Cliente comprador *</Label>
+                <Input value={form.cliente_nome} onChange={(e) => set("cliente_nome", e.target.value)} placeholder="Quem está comprando" />
+              </div>
+              <div className="space-y-2">
+                <Label>Cliente vendedor (proprietário) {isPronto ? "*" : ""}</Label>
+                {isPronto ? (
+                  <Input value={form.vendedor_nome} onChange={(e) => set("vendedor_nome", e.target.value)} placeholder="Dono do imóvel" />
+                ) : (
+                  <Input value={parceiroNome} disabled placeholder="Construtora selecionada abaixo" />
+                )}
+                <p className="text-xs text-muted-foreground">
+                  {isPronto
+                    ? "Imóvel pronto: informe o proprietário que está vendendo."
+                    : "Empreendimento: o vendedor é a construtora."}
+                </p>
               </div>
               <div className="space-y-2">
                 <Label>Unidade *</Label>
@@ -602,7 +622,7 @@ export default function Vendas() {
                     ? descontoAgenciador > 0
                       ? `Imóvel pronto: o agenciador fica com ${descontoAgenciador}% (${formatCurrency(comissaoBruta * descontoAgenciador / 100)}), retirados do percentual do corretor — ${splitCorretor1}% passa a ${Math.max(splitCorretor1 - descontoAgenciador, 0)}%.`
                       : "Imóvel pronto agenciado pelo próprio corretor: o split da ficha não muda."
-                    : "Corretor conforme o split da ficha, gestor por faixa mensal (8–12%) e o restante fica com a Voluire."}
+                    : "Corretor conforme o split da ficha e o restante fica com a Voluire."}
                 </p>
               </div>
             </div>
@@ -780,7 +800,8 @@ export default function Vendas() {
                 <div className="grid gap-1 text-xs text-muted-foreground sm:grid-cols-2">
                   <span>Contrato: {form.numero_contrato || "—"}</span>
                   <span>Data: {form.data_venda ? formatDate(form.data_venda) : "—"}</span>
-                  <span>Cliente: {form.cliente_nome || "—"}</span>
+                  <span>Comprador: {form.cliente_nome || "—"}</span>
+                  <span>Vendedor: {vendedorFinal || "—"}</span>
                   <span>Unidade: {form.unidade || "—"}</span>
                   <span>Valor: {formatCurrency(Number(form.valor) || 0)}</span>
                   <span>Comissão bruta: {formatCurrency(comissaoBruta)}</span>
@@ -818,7 +839,7 @@ export default function Vendas() {
             <TableHeader>
               <TableRow>
                 <TableHead>Contrato</TableHead>
-                <TableHead>Cliente / Unidade</TableHead>
+                <TableHead>Comprador / Vendedor</TableHead>
                 <TableHead>Empreendimento</TableHead>
                 <TableHead>Parceiro</TableHead>
                 <TableHead>Corretores</TableHead>
@@ -835,7 +856,9 @@ export default function Vendas() {
                   <TableCell className="font-mono text-xs">{v.numero_contrato}</TableCell>
                   <TableCell>
                     <div className="font-medium">{v.cliente_nome}</div>
-                    <div className="text-xs text-muted-foreground">Un. {v.unidade}</div>
+                    <div className="text-xs text-muted-foreground">
+                      Vendedor: {v.vendedor_nome ?? v.parceiros?.nome ?? "—"} · Un. {v.unidade}
+                    </div>
                   </TableCell>
                   <TableCell>{v.empreendimentos?.nome ?? "—"}</TableCell>
                   <TableCell>{v.parceiros?.nome ?? "—"}</TableCell>
