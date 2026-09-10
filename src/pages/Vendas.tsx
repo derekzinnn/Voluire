@@ -932,7 +932,7 @@ export default function Vendas() {
                 <TableHead>Contrato</TableHead>
                 <TableHead>Comprador / Vendedor</TableHead>
                 <TableHead>Tipo de imóvel</TableHead>
-                <TableHead>Parceiro</TableHead>
+                <TableHead>Parceria</TableHead>
                 <TableHead>Corretores</TableHead>
                 <TableHead>Valor</TableHead>
                 <TableHead>Pagamento</TableHead>
