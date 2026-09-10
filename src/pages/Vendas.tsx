@@ -84,11 +84,10 @@ const statusColors: Record<string, string> = {
 };
 
 const STEPS = [
-  { title: "Contrato", desc: "Etapa 1 de 5 — identificação do contrato e do imóvel." },
-  { title: "Informações", desc: "Etapa 2 de 5 — comprador, vendedor e agenciamento." },
-  { title: "Equipe", desc: "Etapa 3 de 5 — corretores, captador e conferência final." },
-  { title: "Valores", desc: "Etapa 4 de 5 — valor da venda e comissão bruta." },
-  { title: "Pagamento", desc: "Etapa 5 de 5 — forma de pagamento e cronograma de recebimento." },
+  { title: "Contrato", desc: "Etapa 1 de 4 — identificação do contrato e do imóvel." },
+  { title: "Informações", desc: "Etapa 2 de 4 — comprador, vendedor, agenciamento e corretores." },
+  { title: "Valores", desc: "Etapa 3 de 4 — valor da venda e comissão bruta." },
+  { title: "Pagamento", desc: "Etapa 4 de 4 — forma de pagamento e cronograma de recebimento." },
 ];
 
 type FormState = {
@@ -175,8 +174,6 @@ export default function Vendas() {
       } else {
         if (form.parceiro_id === NONE) return erro("Empreendimento exige a construtora (parceiro).");
       }
-    }
-    if (step === 2) {
       if (!form.corretor1_id) return erro("Selecione o corretor responsável.");
       if (temOutroCorretor && form.corretor2_id === NONE) return erro("Selecione qual foi o outro corretor da venda.");
       const p1 = Number(form.corretor1_part) || 0;
@@ -184,12 +181,12 @@ export default function Vendas() {
       if (form.corretor2_id !== NONE && Math.abs(p1 + p2 - 100) > 0.01)
         return erro("A participação dos dois corretores deve somar 100%.");
     }
-    if (step === 3) {
+    if (step === 2) {
       if (!(Number(form.valor) > 0)) return erro("Informe o valor da venda.");
       if (!(Number(form.comissao_percentual_bruta) > 0)) return erro("Informe a comissão bruta (%).");
       if (form.tem_parceria === "sim" && !form.parceria_nome.trim()) return erro("Informe o nome do parceiro.");
     }
-    if (step === 4) {
+    if (step === 3) {
       if (form.forma_pagamento === "a_vista") {
         if (!form.primeira_parcela) return erro("Informe a data prevista de recebimento.");
       } else {
@@ -614,8 +611,8 @@ export default function Vendas() {
             </div>
             )}
 
-            {/* Etapa 4 — Valores */}
-            {step === 3 && (
+            {/* Etapa 3 — Valores */}
+            {step === 2 && (
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label>Valor da venda (R$) *</Label>
@@ -691,8 +688,8 @@ export default function Vendas() {
             </div>
             )}
 
-            {/* Etapa 5 — Pagamento */}
-            {step === 4 && (
+            {/* Etapa 4 — Pagamento */}
+            {step === 3 && (
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label>Forma de pagamento</Label>
@@ -816,7 +813,7 @@ export default function Vendas() {
             )}
 
             {/* Etapa 3 — Equipe */}
-            {step === 2 && (
+            {step === 1 && (
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2 sm:col-span-2">
                 <Label>Corretor responsável *</Label>
