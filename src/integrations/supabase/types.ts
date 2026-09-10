@@ -582,6 +582,7 @@ export type Database = {
           unidade: string
           updated_at: string
           valor: number
+          vendedor_nome: string | null
         }
         Insert: {
           agenciador_tipo?: string
@@ -601,6 +602,7 @@ export type Database = {
           unidade: string
           updated_at?: string
           valor: number
+          vendedor_nome?: string | null
         }
         Update: {
           agenciador_tipo?: string
@@ -620,6 +622,7 @@ export type Database = {
           unidade?: string
           updated_at?: string
           valor?: number
+          vendedor_nome?: string | null
         }
         Relationships: [
           {
