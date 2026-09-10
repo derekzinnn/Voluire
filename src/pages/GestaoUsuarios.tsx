@@ -235,10 +235,6 @@ export default function GestaoUsuarios() {
       <TabsContent value="equipes">
         <EquipesManager />
       </TabsContent>
-
-      <TabsContent value="comissoes">
-        <GestorFaixasManager />
-      </TabsContent>
     </Tabs>
   );
 }
