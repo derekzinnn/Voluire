@@ -848,7 +848,13 @@ export default function Vendas() {
                     </SelectContent>
                   </Select>
                   {form.corretor2_id !== NONE && (
-                    <Input className="w-28" type="number" min={isPronto ? "0" : "22.5"} max={isPronto ? "100" : "25"} step="0.1" value={form.corretor1_part} onChange={(e) => set("corretor1_part", e.target.value)} placeholder="% part." />
+                    isPronto ? (
+                      <Input className="w-28" type="number" min="0" max="100" step="0.1" value={form.corretor1_part} onChange={(e) => set("corretor1_part", e.target.value)} placeholder="% part." />
+                    ) : (
+                      <div className="flex w-28 items-center justify-center rounded-md border bg-muted px-2 text-sm">
+                        {((Number(corretores.find((c) => c.id === form.corretor1_id)?.comissao_percentual) || 50) / 2).toFixed(1).replace(".0", "")}%
+                      </div>
+                    )
                   )}
                 </div>
               </div>
@@ -858,8 +864,8 @@ export default function Vendas() {
                   value={form.corretor2_id !== NONE || temOutroCorretor ? "sim" : "nao"}
                   onValueChange={(v) => {
                     setTemOutroCorretor(v === "sim");
-                    if (v === "nao") { set("corretor2_id", NONE); set("corretor1_part", isPronto ? "100" : "50"); set("corretor2_part", "0"); }
-                    else if (Number(form.corretor2_part) === 0) { set("corretor1_part", isPronto ? "50" : "25"); set("corretor2_part", isPronto ? "50" : "25"); }
+                    if (v === "nao") { set("corretor2_id", NONE); if (isPronto) { set("corretor1_part", "100"); set("corretor2_part", "0"); } }
+                    else if (isPronto && Number(form.corretor2_part) === 0) { set("corretor1_part", "50"); set("corretor2_part", "50"); }
                   }}
                 >
                   <SelectTrigger><SelectValue /></SelectTrigger>
@@ -873,14 +879,20 @@ export default function Vendas() {
                 <div className="space-y-2 sm:col-span-2">
                   <Label>Qual outro corretor? *</Label>
                   <div className="flex gap-2">
-                    <Select value={form.corretor2_id} onValueChange={(v) => { set("corretor2_id", v); if (v !== NONE && Number(form.corretor2_part) === 0) { set("corretor1_part", isPronto ? "50" : "25"); set("corretor2_part", isPronto ? "50" : "25"); } }}>
+                    <Select value={form.corretor2_id} onValueChange={(v) => { set("corretor2_id", v); if (isPronto && v !== NONE && Number(form.corretor2_part) === 0) { set("corretor1_part", "50"); set("corretor2_part", "50"); } }}>
                       <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                       <SelectContent className="max-h-60">
                         {corretores.filter((c) => c.id !== form.corretor1_id).map((c) => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}
                       </SelectContent>
                     </Select>
                     {form.corretor2_id !== NONE && (
-                      <Input className="w-28" type="number" min={isPronto ? "0" : "22.5"} max={isPronto ? "100" : "25"} step="0.1" value={form.corretor2_part} onChange={(e) => set("corretor2_part", e.target.value)} placeholder="% part." />
+                      isPronto ? (
+                        <Input className="w-28" type="number" min="0" max="100" step="0.1" value={form.corretor2_part} onChange={(e) => set("corretor2_part", e.target.value)} placeholder="% part." />
+                      ) : (
+                        <div className="flex w-28 items-center justify-center rounded-md border bg-muted px-2 text-sm">
+                          {((Number(corretores.find((c) => c.id === form.corretor2_id)?.comissao_percentual) || 50) / 2).toFixed(1).replace(".0", "")}%
+                        </div>
+                      )
                     )}
                   </div>
                 </div>
