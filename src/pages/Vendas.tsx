@@ -660,11 +660,11 @@ export default function Vendas() {
               <div className="rounded-md border p-3 text-sm sm:col-span-2">
                 <p className="font-medium">Como a comissão será distribuída</p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  {isPronto
-                    ? descontoAgenciador > 0
-                      ? `Imóvel pronto: o agenciador fica com ${descontoAgenciador}% (${formatCurrency(comissaoBruta * descontoAgenciador / 100)}), retirados do percentual do corretor — ${splitCorretor1}% passa a ${Math.max(splitCorretor1 - descontoAgenciador, 0)}%.`
-                      : "Imóvel pronto agenciado pelo próprio corretor: a comissão da ficha não muda."
-                    : "Corretor conforme a comissão da ficha e o restante fica com a Voluire."}
+                  {descontoAgenciador > 0
+                    ? `O agenciador fica com ${descontoAgenciador}% (${formatCurrency(comissaoBruta * descontoAgenciador / 100)}), descontados antes da divisão: ${splitCorretor1}% viram ${fmtPct(Math.max(splitCorretor1 - descontoAgenciador, 0))}%${doisCorretores ? ` e, com dois corretores, ${fmtPct(participacaoDe(form.corretor1_id))}% para cada participação.` : "."}`
+                    : doisCorretores
+                      ? "Cada corretor fica com metade da própria comissão da ficha; o que sobrar fica com a Voluire."
+                      : "O corretor fica com a comissão da ficha e o restante fica com a Voluire."}
                 </p>
               </div>
             </div>
