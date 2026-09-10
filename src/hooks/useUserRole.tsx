@@ -28,7 +28,7 @@ export const PERMISSOES: { key: string; label: string; descricao: string }[] = [
   { key: "financeiro.gerenciar", label: "Lançar despesas e comissões", descricao: "Edita despesas e comissões" },
   { key: "corretores.ver_todos", label: "Ver todos os corretores", descricao: "Vê a lista completa de corretores" },
   { key: "corretores.gerenciar", label: "Cadastrar e editar corretores", descricao: "Cria e altera fichas de corretor" },
-  { key: "parceiros.gerenciar", label: "Gerenciar parceiros", descricao: "Cadastra construtoras e parceiros" },
+  
   { key: "empreendimentos.gerenciar", label: "Gerenciar empreendimentos", descricao: "Cadastra empreendimentos e imóveis" },
   { key: "usuarios.gerenciar", label: "Gerenciar usuários e cargos", descricao: "Convida usuários e altera permissões" },
 ];
@@ -138,7 +138,7 @@ export function canAccessPage(role: AppRole | null, page: string, permissions: s
   if (page === "/vendas") return role === "gerente" || role === "corretor" || has("vendas.ver_todas") || has("vendas.gerenciar");
   if (page === "/corretores") return role === "gerente" || has("corretores.ver_todos") || has("corretores.gerenciar");
   if (page === "/financeiro") return role === "gerente" || has("financeiro.ver") || has("financeiro.gerenciar");
-  if (page === "/parceiros") return role === "gerente" || has("parceiros.gerenciar");
+  
   if (page === "/empreendimentos") return role === "gerente" || has("empreendimentos.gerenciar");
   if (page === "/minha-equipe") return role === "gerente";
   if (page === "/gestao-usuarios") return has("usuarios.gerenciar");
