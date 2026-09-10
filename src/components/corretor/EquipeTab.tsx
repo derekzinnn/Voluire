@@ -195,20 +195,20 @@ export default function EquipeTab({ corretorId, equipeId, splitAtual, podeGerenc
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base">
-              <Percent className="h-4 w-4" /> Split de comissão
+              <Percent className="h-4 w-4" /> Comissão
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Split vigente do corretor</span>
+              <span className="text-muted-foreground">Comissão vigente do corretor</span>
               <span className="font-medium">{formatPercent(splitAtual)}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Split vigente da empresa</span>
+              <span className="text-muted-foreground">Comissão vigente da empresa</span>
               <span className="font-medium">{formatPercent(100 - splitAtual)}</span>
             </div>
             <p className="pt-1 text-xs text-muted-foreground">
-              O split é congelado no momento da venda — alterá-lo não muda comissões já geradas.
+              A comissão é congelada no momento da venda — alterá-la não muda comissões já geradas.
             </p>
           </CardContent>
         </Card>
@@ -243,7 +243,7 @@ export default function EquipeTab({ corretorId, equipeId, splitAtual, podeGerenc
 
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">Splits aplicados nas comissões</CardTitle>
+          <CardTitle className="text-base">Comissões aplicadas nas vendas</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
           <Table>
@@ -253,7 +253,7 @@ export default function EquipeTab({ corretorId, equipeId, splitAtual, podeGerenc
                 <TableHead>Data</TableHead>
                 <TableHead>Contrato</TableHead>
                 <TableHead>Comissão bruta</TableHead>
-                <TableHead>Split aplicado</TableHead>
+                <TableHead>Comissão aplicada</TableHead>
                 <TableHead>Participação</TableHead>
                 <TableHead>Corretor</TableHead>
                 <TableHead>Status</TableHead>
