@@ -431,7 +431,6 @@ export default function Vendas() {
       parceria_nome: v.parceria_nome ?? "",
       unidade: v.unidade ?? "",
       empreendimento_id: v.empreendimento_id ?? NONE,
-      parceiro_id: v.parceiro_id ?? NONE,
       valor: String(v.valor ?? ""),
       data_venda: v.data_venda ?? "",
       comissao_percentual_bruta: String(v.comissao_percentual_bruta ?? 6),
@@ -566,31 +565,18 @@ export default function Vendas() {
                 <Input value={form.cliente_nome} onChange={(e) => set("cliente_nome", e.target.value)} placeholder="Quem está comprando" />
               </div>
               <div className="space-y-2">
-                <Label>Cliente vendedor (proprietário) {isPronto ? "*" : ""}</Label>
-                {isPronto ? (
-                  <Input value={form.vendedor_nome} onChange={(e) => set("vendedor_nome", e.target.value)} placeholder="Dono do imóvel" />
-                ) : (
-                  <Input value={parceiroNome} disabled placeholder="Preenchido com a construtora" />
-                )}
+                <Label>{isPronto ? "Cliente vendedor (proprietário) *" : "Construtora (cliente vendedor) *"}</Label>
+                <Input
+                  value={form.vendedor_nome}
+                  onChange={(e) => set("vendedor_nome", e.target.value)}
+                  placeholder={isPronto ? "Dono do imóvel" : "Nome da construtora"}
+                />
                 <p className="text-xs text-muted-foreground">
                   {isPronto
                     ? "Imóvel pronto: informe o proprietário que está vendendo."
-                    : "Empreendimento: o vendedor é a construtora selecionada."}
+                    : "Empreendimento: o vendedor é a construtora."}
                 </p>
               </div>
-              {!isPronto && (
-                <div className="space-y-2">
-                  <Label>Construtora / imobiliária {form.empreendimento_id !== NONE ? "*" : ""}</Label>
-                  <Select value={form.parceiro_id} onValueChange={(v) => set("parceiro_id", v)}>
-                    <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value={NONE}>Sem parceiro</SelectItem>
-                      {parceiros.map((p) => <SelectItem key={p.id} value={p.id}>{p.nome}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                  <p className="text-xs text-muted-foreground">Venda de empreendimento exige a construtora.</p>
-                </div>
-              )}
               {isPronto && (
                 <>
                   <div className="space-y-2">
