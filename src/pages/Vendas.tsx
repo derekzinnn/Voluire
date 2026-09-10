@@ -101,6 +101,7 @@ type FormState = {
   comissao_percentual_bruta: string;
   forma_pagamento: string;
   captador_corretor_id: string;
+  agenciador_tipo: string;
   status: string;
   observacao: string;
   corretor1_id: string;
@@ -122,6 +123,7 @@ const emptyForm = (): FormState => ({
   comissao_percentual_bruta: "6",
   forma_pagamento: "a_vista",
   captador_corretor_id: NONE,
+  agenciador_tipo: "proprio",
   status: "ativa",
   observacao: "",
   corretor1_id: "",
