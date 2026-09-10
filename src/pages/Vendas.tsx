@@ -501,12 +501,12 @@ export default function Vendas() {
                 </Select>
                 {isPronto && (
                   <p className="text-xs text-muted-foreground">
-                    Imóvel pronto: agenciador 10% ({formatCurrency(comissaoBruta * 0.1)}) e vendedor 40% ({formatCurrency(comissaoBruta * 0.4)}) da comissão bruta.
+                    Imóvel pronto: informe quem agenciou — o agenciador retira pontos do percentual do corretor.
                   </p>
                 )}
               </div>
               <div className="space-y-2">
-                <Label>Parceiro (construtora / imobiliária)</Label>
+                <Label>Construtora / imobiliária {isPronto ? "" : "*"}</Label>
                 <Select value={form.parceiro_id} onValueChange={(v) => set("parceiro_id", v)}>
                   <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                   <SelectContent>
@@ -514,7 +514,37 @@ export default function Vendas() {
                     {parceiros.map((p) => <SelectItem key={p.id} value={p.id}>{p.nome}</SelectItem>)}
                   </SelectContent>
                 </Select>
+                {!isPronto && (
+                  <p className="text-xs text-muted-foreground">Venda de empreendimento exige a construtora.</p>
+                )}
               </div>
+              {isPronto && (
+                <>
+                  <div className="space-y-2">
+                    <Label>Agenciador *</Label>
+                    <Select value={form.agenciador_tipo} onValueChange={(v) => { set("agenciador_tipo", v); if (v !== "corretor") set("captador_corretor_id", NONE); }}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="proprio">O próprio corretor da venda (sem desconto)</SelectItem>
+                        <SelectItem value="voluire">Voluire (5%)</SelectItem>
+                        <SelectItem value="corretor">Outro corretor / colega (10%)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {form.agenciador_tipo === "corretor" && (
+                    <div className="space-y-2">
+                      <Label>Colega que agenciou *</Label>
+                      <Select value={form.captador_corretor_id} onValueChange={(v) => set("captador_corretor_id", v)}>
+                        <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                        <SelectContent className="max-h-60">
+                          <SelectItem value={NONE}>Selecione</SelectItem>
+                          {corretores.map((c) => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                </>
+              )}
               <div className="space-y-2">
                 <Label>Status</Label>
                 <Select value={form.status} onValueChange={(v) => set("status", v)}>
@@ -545,14 +575,27 @@ export default function Vendas() {
                 />
               </div>
               <div className="space-y-2">
-                <Label>Comissão bruta (6% fixo)</Label>
-                <Input value={formatCurrency(comissaoBruta)} readOnly disabled />
+                <Label>Comissão bruta (%) *</Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    className="w-28"
+                    value={form.comissao_percentual_bruta}
+                    onChange={(e) => set("comissao_percentual_bruta", e.target.value)}
+                  />
+                  <span className="text-sm text-muted-foreground">= {formatCurrency(comissaoBruta)}</span>
+                </div>
+                <p className="text-xs text-muted-foreground">Padrão 6% — ajuste quando o contrato tiver outra taxa.</p>
               </div>
               <div className="rounded-md border p-3 text-sm sm:col-span-2">
                 <p className="font-medium">Como a comissão será distribuída</p>
                 <p className="mt-1 text-xs text-muted-foreground">
                   {isPronto
-                    ? "Imóvel pronto: 10% agenciador, 40% vendedor, restante entre gestor e Voluire."
+                    ? descontoAgenciador > 0
+                      ? `Imóvel pronto: o agenciador fica com ${descontoAgenciador}% (${formatCurrency(comissaoBruta * descontoAgenciador / 100)}), retirados do percentual do corretor — ${splitCorretor1}% passa a ${Math.max(splitCorretor1 - descontoAgenciador, 0)}%.`
+                      : "Imóvel pronto agenciado pelo próprio corretor: o split da ficha não muda."
                     : "Corretor conforme o split da ficha, gestor por faixa mensal (8–12%) e o restante fica com a Voluire."}
                 </p>
               </div>
