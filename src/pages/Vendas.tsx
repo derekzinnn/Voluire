@@ -603,8 +603,8 @@ export default function Vendas() {
             </div>
             )}
 
-            {/* Etapa 2 — Valores */}
-            {step === 1 && (
+            {/* Etapa 3 — Valores */}
+            {step === 2 && (
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label>Valor da venda (R$) *</Label>
@@ -680,8 +680,8 @@ export default function Vendas() {
             </div>
             )}
 
-            {/* Etapa 3 — Pagamento */}
-            {step === 2 && (
+            {/* Etapa 4 — Pagamento */}
+            {step === 3 && (
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label>Forma de pagamento</Label>
@@ -787,8 +787,8 @@ export default function Vendas() {
             </div>
             )}
 
-            {/* Etapa 4 — Equipe */}
-            {step === 3 && (
+            {/* Etapa 5 — Equipe */}
+            {step === 4 && (
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2 sm:col-span-2">
                 <Label>Corretor responsável *</Label>
