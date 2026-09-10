@@ -46,10 +46,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }
 
   // Filter nav items based on role
-  const visibleNavItems = navItems.filter(item => canAccessPage(role, item.to));
+  const visibleNavItems = navItems.filter(item => canAccessPage(role, item.to, permissions));
 
   // Block access to unauthorized pages
-  if (!canAccessPage(role, location.pathname)) {
+  if (!canAccessPage(role, location.pathname, permissions)) {
     return <Navigate to="/" replace />;
   }
 
