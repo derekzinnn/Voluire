@@ -523,6 +523,12 @@ export default function Vendas() {
                 <Label>Unidade *</Label>
                 <Input value={form.unidade} onChange={(e) => set("unidade", e.target.value)} />
               </div>
+            </div>
+            )}
+
+            {/* Etapa 2 — Informações */}
+            {step === 1 && (
+            <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label>Cliente comprador *</Label>
                 <Input value={form.cliente_nome} onChange={(e) => set("cliente_nome", e.target.value)} placeholder="Quem está comprando" />
