@@ -94,6 +94,8 @@ type FormState = {
   numero_contrato: string;
   cliente_nome: string;
   vendedor_nome: string;
+  tem_parceria: string;
+  parceria_nome: string;
   unidade: string;
   empreendimento_id: string;
   parceiro_id: string;
@@ -117,6 +119,8 @@ const emptyForm = (): FormState => ({
   numero_contrato: "",
   cliente_nome: "",
   vendedor_nome: "",
+  tem_parceria: "nao",
+  parceria_nome: "",
   unidade: "",
   empreendimento_id: NONE,
   parceiro_id: NONE,
@@ -170,6 +174,7 @@ export default function Vendas() {
     if (step === 1) {
       if (!(Number(form.valor) > 0)) return erro("Informe o valor da venda.");
       if (!(Number(form.comissao_percentual_bruta) > 0)) return erro("Informe a comissão bruta (%).");
+      if (form.tem_parceria === "sim" && !form.parceria_nome.trim()) return erro("Informe o nome do parceiro.");
     }
     if (step === 2) {
       if (form.forma_pagamento === "a_vista") {
@@ -290,12 +295,15 @@ export default function Vendas() {
         numero_contrato: form.numero_contrato.trim(),
         cliente_nome: form.cliente_nome,
         vendedor_nome: vendedorFinal.trim() ? vendedorFinal.trim() : null,
+        tem_parceria: form.tem_parceria === "sim",
+        parceria_nome: form.tem_parceria === "sim" ? form.parceria_nome.trim() || null : null,
         unidade: form.unidade,
         empreendimento_id: form.empreendimento_id === NONE ? null : form.empreendimento_id,
         parceiro_id: form.parceiro_id === NONE ? null : form.parceiro_id,
         valor: Number(form.valor),
         data_venda: form.data_venda,
-        comissao_percentual_bruta: Number(form.comissao_percentual_bruta) || 6,
+        comissao_percentual_bruta:
+          form.tem_parceria === "sim" ? Number(form.comissao_percentual_bruta) || 6 : 6,
         forma_pagamento: form.forma_pagamento,
         captador_corretor_id:
           isPronto && form.agenciador_tipo === "corretor" && form.captador_corretor_id !== NONE
@@ -399,6 +407,8 @@ export default function Vendas() {
       numero_contrato: v.numero_contrato ?? "",
       cliente_nome: v.cliente_nome ?? "",
       vendedor_nome: v.vendedor_nome ?? "",
+      tem_parceria: v.tem_parceria ? "sim" : "nao",
+      parceria_nome: v.parceria_nome ?? "",
       unidade: v.unidade ?? "",
       empreendimento_id: v.empreendimento_id ?? NONE,
       parceiro_id: v.parceiro_id ?? NONE,
@@ -601,6 +611,35 @@ export default function Vendas() {
                 />
               </div>
               <div className="space-y-2">
+                <Label>Venda em parceria? *</Label>
+                <Select
+                  value={form.tem_parceria}
+                  onValueChange={(v) => {
+                    set("tem_parceria", v);
+                    if (v !== "sim") {
+                      set("parceria_nome", "");
+                      set("comissao_percentual_bruta", "6");
+                    }
+                  }}
+                >
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="nao">Não — comissão de 6%</SelectItem>
+                    <SelectItem value="sim">Sim — comissão diferente</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              {form.tem_parceria === "sim" && (
+                <div className="space-y-2">
+                  <Label>Nome do parceiro *</Label>
+                  <Input
+                    value={form.parceria_nome}
+                    onChange={(e) => set("parceria_nome", e.target.value)}
+                    placeholder="Quem entrou na parceria"
+                  />
+                </div>
+              )}
+              <div className="space-y-2">
                 <Label>Comissão bruta (%) *</Label>
                 <div className="flex items-center gap-2">
                   <Input
@@ -608,12 +647,17 @@ export default function Vendas() {
                     step="0.01"
                     min="0"
                     className="w-28"
+                    disabled={form.tem_parceria !== "sim"}
                     value={form.comissao_percentual_bruta}
                     onChange={(e) => set("comissao_percentual_bruta", e.target.value)}
                   />
                   <span className="text-sm text-muted-foreground">= {formatCurrency(comissaoBruta)}</span>
                 </div>
-                <p className="text-xs text-muted-foreground">Padrão 6% — ajuste quando o contrato tiver outra taxa.</p>
+                <p className="text-xs text-muted-foreground">
+                  {form.tem_parceria === "sim"
+                    ? "Parceria: informe o percentual acordado no contrato."
+                    : "Sem parceria: comissão fixa de 6%."}
+                </p>
               </div>
               <div className="rounded-md border p-3 text-sm sm:col-span-2">
                 <p className="font-medium">Como a comissão será distribuída</p>
