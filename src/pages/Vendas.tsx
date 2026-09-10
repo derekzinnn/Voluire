@@ -86,9 +86,9 @@ const statusColors: Record<string, string> = {
 const STEPS = [
   { title: "Contrato", desc: "Etapa 1 de 5 — identificação do contrato e do imóvel." },
   { title: "Informações", desc: "Etapa 2 de 5 — comprador, vendedor e agenciamento." },
-  { title: "Valores", desc: "Etapa 3 de 5 — valor da venda e comissão bruta." },
-  { title: "Pagamento", desc: "Etapa 4 de 5 — forma de pagamento e cronograma de recebimento." },
-  { title: "Equipe", desc: "Etapa 5 de 5 — corretores, captador e conferência final." },
+  { title: "Equipe", desc: "Etapa 3 de 5 — corretores, captador e conferência final." },
+  { title: "Valores", desc: "Etapa 4 de 5 — valor da venda e comissão bruta." },
+  { title: "Pagamento", desc: "Etapa 5 de 5 — forma de pagamento e cronograma de recebimento." },
 ];
 
 type FormState = {
@@ -177,11 +177,19 @@ export default function Vendas() {
       }
     }
     if (step === 2) {
+      if (!form.corretor1_id) return erro("Selecione o corretor responsável.");
+      if (temOutroCorretor && form.corretor2_id === NONE) return erro("Selecione qual foi o outro corretor da venda.");
+      const p1 = Number(form.corretor1_part) || 0;
+      const p2 = form.corretor2_id !== NONE ? Number(form.corretor2_part) || 0 : 0;
+      if (form.corretor2_id !== NONE && Math.abs(p1 + p2 - 100) > 0.01)
+        return erro("A participação dos dois corretores deve somar 100%.");
+    }
+    if (step === 3) {
       if (!(Number(form.valor) > 0)) return erro("Informe o valor da venda.");
       if (!(Number(form.comissao_percentual_bruta) > 0)) return erro("Informe a comissão bruta (%).");
       if (form.tem_parceria === "sim" && !form.parceria_nome.trim()) return erro("Informe o nome do parceiro.");
     }
-    if (step === 3) {
+    if (step === 4) {
       if (form.forma_pagamento === "a_vista") {
         if (!form.primeira_parcela) return erro("Informe a data prevista de recebimento.");
       } else {
