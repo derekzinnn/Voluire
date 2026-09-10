@@ -612,17 +612,6 @@ export default function Vendas() {
                   )}
                 </>
               )}
-              <div className="space-y-2">
-                <Label>Status</Label>
-                <Select value={form.status} onValueChange={(v) => set("status", v)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="ativa">Ativa</SelectItem>
-                    <SelectItem value="quitada">Quitada</SelectItem>
-                    <SelectItem value="distrato">Distrato</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
             </div>
             )}
 
