@@ -302,7 +302,8 @@ export default function Vendas() {
         parceiro_id: form.parceiro_id === NONE ? null : form.parceiro_id,
         valor: Number(form.valor),
         data_venda: form.data_venda,
-        comissao_percentual_bruta: Number(form.comissao_percentual_bruta) || 6,
+        comissao_percentual_bruta:
+          form.tem_parceria === "sim" ? Number(form.comissao_percentual_bruta) || 6 : 6,
         forma_pagamento: form.forma_pagamento,
         captador_corretor_id:
           isPronto && form.agenciador_tipo === "corretor" && form.captador_corretor_id !== NONE
