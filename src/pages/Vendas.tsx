@@ -285,6 +285,7 @@ export default function Vendas() {
     mutationFn: async () => {
       if (!form.numero_contrato.trim()) throw new Error("Informe o número do contrato.");
       if (!form.corretor1_id) throw new Error("Selecione o corretor responsável.");
+      if (temOutroCorretor && form.corretor2_id === NONE) throw new Error("Selecione qual foi o outro corretor da venda.");
       if (isPronto) {
         if (form.agenciador_tipo === "corretor" && form.captador_corretor_id === NONE)
           throw new Error("Selecione o colega que agenciou o imóvel.");
@@ -432,6 +433,7 @@ export default function Vendas() {
       qtd_parcelas: String((ps ?? []).length || 1),
       primeira_parcela: (ps ?? [])[0]?.data_prevista ?? v.data_venda ?? new Date().toISOString().split("T")[0],
     });
+    setTemOutroCorretor(!!parts[1]?.corretor_id);
     setStep(0);
     setOpen(true);
   }
@@ -461,7 +463,7 @@ export default function Vendas() {
       </div>
 
       {isGestor && (
-        <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) { setEditId(null); setForm(emptyForm()); setParcelasEdit([]); setStep(0); } }}>
+        <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) { setEditId(null); setForm(emptyForm()); setParcelasEdit([]); setStep(0); setTemOutroCorretor(false); } }}>
           <DialogTrigger asChild>
             <Button><Plus className="mr-2 h-4 w-4" />Novo contrato</Button>
           </DialogTrigger>
