@@ -78,7 +78,7 @@ export default function NovoCorretorDialog() {
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label>Split do corretor (%)</Label>
+              <Label>Comissão do corretor (%)</Label>
               <Input type="number" min="0" max="100" value={comissao} onChange={(e) => setComissao(e.target.value)} />
             </div>
             <div className="space-y-2">
