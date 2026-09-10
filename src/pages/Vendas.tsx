@@ -101,6 +101,7 @@ type FormState = {
   comissao_percentual_bruta: string;
   forma_pagamento: string;
   captador_corretor_id: string;
+  agenciador_tipo: string;
   status: string;
   observacao: string;
   corretor1_id: string;
@@ -122,6 +123,7 @@ const emptyForm = (): FormState => ({
   comissao_percentual_bruta: "6",
   forma_pagamento: "a_vista",
   captador_corretor_id: NONE,
+  agenciador_tipo: "proprio",
   status: "ativa",
   observacao: "",
   corretor1_id: "",
@@ -154,8 +156,18 @@ export default function Vendas() {
       if (!form.data_venda) return erro("Informe a data da venda.");
       if (!form.cliente_nome.trim()) return erro("Informe o cliente.");
       if (!form.unidade.trim()) return erro("Informe a unidade.");
+      if (isPronto) {
+        if (form.agenciador_tipo === "corretor" && form.captador_corretor_id === NONE)
+          return erro("Selecione o colega que agenciou o imóvel.");
+      } else {
+        if (form.empreendimento_id === NONE) return erro("Selecione o empreendimento.");
+        if (form.parceiro_id === NONE) return erro("Empreendimento exige a construtora (parceiro).");
+      }
     }
-    if (step === 1 && !(Number(form.valor) > 0)) return erro("Informe o valor da venda.");
+    if (step === 1) {
+      if (!(Number(form.valor) > 0)) return erro("Informe o valor da venda.");
+      if (!(Number(form.comissao_percentual_bruta) > 0)) return erro("Informe a comissão bruta (%).");
+    }
     if (step === 2) {
       if (form.forma_pagamento === "a_vista") {
         if (!form.primeira_parcela) return erro("Informe a data prevista de recebimento.");
@@ -243,12 +255,27 @@ export default function Vendas() {
 
   const empSelecionado = (empreendimentos as any[]).find((e) => e.id === form.empreendimento_id);
   const isPronto = empSelecionado?.tipo === "pronto";
-  const comissaoBruta = (Number(form.valor) || 0) * 0.06;
+  const pctBruta = Number(form.comissao_percentual_bruta) || 0;
+  const comissaoBruta = (Number(form.valor) || 0) * pctBruta / 100;
+  const descontoAgenciador = !isPronto
+    ? 0
+    : form.agenciador_tipo === "voluire"
+      ? 5
+      : form.agenciador_tipo === "corretor"
+        ? 10
+        : 0;
+  const splitCorretor1 = Number(corretores.find((c) => c.id === form.corretor1_id)?.comissao_percentual) || 50;
 
   const salvar = useMutation({
     mutationFn: async () => {
       if (!form.numero_contrato.trim()) throw new Error("Informe o número do contrato.");
       if (!form.corretor1_id) throw new Error("Selecione o corretor responsável.");
+      if (isPronto) {
+        if (form.agenciador_tipo === "corretor" && form.captador_corretor_id === NONE)
+          throw new Error("Selecione o colega que agenciou o imóvel.");
+      } else if (form.empreendimento_id !== NONE && form.parceiro_id === NONE) {
+        throw new Error("Venda de empreendimento exige a construtora (parceiro).");
+      }
       const p1 = Number(form.corretor1_part) || 0;
       const p2 = form.corretor2_id !== NONE ? Number(form.corretor2_part) || 0 : 0;
       if (form.corretor2_id !== NONE && Math.abs(p1 + p2 - 100) > 0.01)
@@ -262,9 +289,15 @@ export default function Vendas() {
         parceiro_id: form.parceiro_id === NONE ? null : form.parceiro_id,
         valor: Number(form.valor),
         data_venda: form.data_venda,
-        comissao_percentual_bruta: 6,
+        comissao_percentual_bruta: Number(form.comissao_percentual_bruta) || 6,
         forma_pagamento: form.forma_pagamento,
-        captador_corretor_id: form.captador_corretor_id === NONE ? null : form.captador_corretor_id,
+        captador_corretor_id:
+          isPronto && form.agenciador_tipo === "corretor" && form.captador_corretor_id !== NONE
+            ? form.captador_corretor_id
+            : form.captador_corretor_id === NONE
+              ? null
+              : form.captador_corretor_id,
+        agenciador_tipo: isPronto ? form.agenciador_tipo : "proprio",
         status: form.status,
         observacao: form.observacao || null,
       };
@@ -364,9 +397,10 @@ export default function Vendas() {
       parceiro_id: v.parceiro_id ?? NONE,
       valor: String(v.valor ?? ""),
       data_venda: v.data_venda ?? "",
-      comissao_percentual_bruta: "6",
+      comissao_percentual_bruta: String(v.comissao_percentual_bruta ?? 6),
       forma_pagamento: v.forma_pagamento ?? "a_vista",
       captador_corretor_id: v.captador_corretor_id ?? NONE,
+      agenciador_tipo: v.agenciador_tipo ?? "proprio",
       status: v.status ?? "ativa",
       observacao: v.observacao ?? "",
       corretor1_id: parts[0]?.corretor_id ?? "",
@@ -473,12 +507,12 @@ export default function Vendas() {
                 </Select>
                 {isPronto && (
                   <p className="text-xs text-muted-foreground">
-                    Imóvel pronto: agenciador 10% ({formatCurrency(comissaoBruta * 0.1)}) e vendedor 40% ({formatCurrency(comissaoBruta * 0.4)}) da comissão bruta.
+                    Imóvel pronto: informe quem agenciou — o agenciador retira pontos do percentual do corretor.
                   </p>
                 )}
               </div>
               <div className="space-y-2">
-                <Label>Parceiro (construtora / imobiliária)</Label>
+                <Label>Construtora / imobiliária {isPronto ? "" : "*"}</Label>
                 <Select value={form.parceiro_id} onValueChange={(v) => set("parceiro_id", v)}>
                   <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                   <SelectContent>
@@ -486,7 +520,37 @@ export default function Vendas() {
                     {parceiros.map((p) => <SelectItem key={p.id} value={p.id}>{p.nome}</SelectItem>)}
                   </SelectContent>
                 </Select>
+                {!isPronto && (
+                  <p className="text-xs text-muted-foreground">Venda de empreendimento exige a construtora.</p>
+                )}
               </div>
+              {isPronto && (
+                <>
+                  <div className="space-y-2">
+                    <Label>Agenciador *</Label>
+                    <Select value={form.agenciador_tipo} onValueChange={(v) => { set("agenciador_tipo", v); if (v !== "corretor") set("captador_corretor_id", NONE); }}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="proprio">O próprio corretor da venda (sem desconto)</SelectItem>
+                        <SelectItem value="voluire">Voluire (5%)</SelectItem>
+                        <SelectItem value="corretor">Outro corretor / colega (10%)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {form.agenciador_tipo === "corretor" && (
+                    <div className="space-y-2">
+                      <Label>Colega que agenciou *</Label>
+                      <Select value={form.captador_corretor_id} onValueChange={(v) => set("captador_corretor_id", v)}>
+                        <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                        <SelectContent className="max-h-60">
+                          <SelectItem value={NONE}>Selecione</SelectItem>
+                          {corretores.map((c) => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                </>
+              )}
               <div className="space-y-2">
                 <Label>Status</Label>
                 <Select value={form.status} onValueChange={(v) => set("status", v)}>
@@ -517,14 +581,27 @@ export default function Vendas() {
                 />
               </div>
               <div className="space-y-2">
-                <Label>Comissão bruta (6% fixo)</Label>
-                <Input value={formatCurrency(comissaoBruta)} readOnly disabled />
+                <Label>Comissão bruta (%) *</Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    className="w-28"
+                    value={form.comissao_percentual_bruta}
+                    onChange={(e) => set("comissao_percentual_bruta", e.target.value)}
+                  />
+                  <span className="text-sm text-muted-foreground">= {formatCurrency(comissaoBruta)}</span>
+                </div>
+                <p className="text-xs text-muted-foreground">Padrão 6% — ajuste quando o contrato tiver outra taxa.</p>
               </div>
               <div className="rounded-md border p-3 text-sm sm:col-span-2">
                 <p className="font-medium">Como a comissão será distribuída</p>
                 <p className="mt-1 text-xs text-muted-foreground">
                   {isPronto
-                    ? "Imóvel pronto: 10% agenciador, 40% vendedor, restante entre gestor e Voluire."
+                    ? descontoAgenciador > 0
+                      ? `Imóvel pronto: o agenciador fica com ${descontoAgenciador}% (${formatCurrency(comissaoBruta * descontoAgenciador / 100)}), retirados do percentual do corretor — ${splitCorretor1}% passa a ${Math.max(splitCorretor1 - descontoAgenciador, 0)}%.`
+                      : "Imóvel pronto agenciado pelo próprio corretor: o split da ficha não muda."
                     : "Corretor conforme o split da ficha, gestor por faixa mensal (8–12%) e o restante fica com a Voluire."}
                 </p>
               </div>
@@ -670,16 +747,29 @@ export default function Vendas() {
                   )}
                 </div>
               </div>
-              <div className="space-y-2 sm:col-span-2">
-                <Label>{isPronto ? "Agenciador (captador) — 10%" : "Captador"}</Label>
-                <Select value={form.captador_corretor_id} onValueChange={(v) => set("captador_corretor_id", v)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent className="max-h-60">
-                    <SelectItem value={NONE}>Sem captador</SelectItem>
-                    {corretores.map((c) => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
+              {isPronto ? (
+                <div className="rounded-md border p-3 text-sm sm:col-span-2">
+                  <p className="font-medium">Agenciamento</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {form.agenciador_tipo === "voluire"
+                      ? "Voluire agenciou — 5% saem do percentual do corretor."
+                      : form.agenciador_tipo === "corretor"
+                        ? `Agenciado por ${corretores.find((c) => c.id === form.captador_corretor_id)?.nome ?? "—"} — 10% saem do percentual do corretor.`
+                        : "Agenciado pelo próprio corretor — sem desconto."}
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-2 sm:col-span-2">
+                  <Label>Captador</Label>
+                  <Select value={form.captador_corretor_id} onValueChange={(v) => set("captador_corretor_id", v)}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent className="max-h-60">
+                      <SelectItem value={NONE}>Sem captador</SelectItem>
+                      {corretores.map((c) => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
               <div className="space-y-2 sm:col-span-2">
                 <Label>Observação</Label>
                 <Textarea value={form.observacao} onChange={(e) => set("observacao", e.target.value)} rows={2} />

@@ -1,0 +1,57 @@
+ALTER TABLE public.vendas
+  ADD COLUMN IF NOT EXISTS agenciador_tipo text NOT NULL DEFAULT 'proprio';
+
+CREATE OR REPLACE FUNCTION public.recalc_comissao_venda(p_venda_id uuid)
+ RETURNS void
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  v_valor numeric; v_pct numeric; v_total numeric; v_corretores numeric;
+  v_tipo text; v_captador uuid; v_ag_tipo text; v_desconto numeric := 0;
+  v_agenciador_valor numeric := 0;
+BEGIN
+  SELECT ve.valor, ve.comissao_percentual_bruta, ve.captador_corretor_id,
+         COALESCE(ve.agenciador_tipo,'proprio'), COALESCE(e.tipo,'lancamento')
+    INTO v_valor, v_pct, v_captador, v_ag_tipo, v_tipo
+  FROM public.vendas ve
+  LEFT JOIN public.empreendimentos e ON e.id = ve.empreendimento_id
+  WHERE ve.id = p_venda_id;
+
+  IF v_valor IS NULL THEN RETURN; END IF;
+  v_total := v_valor * COALESCE(v_pct,6) / 100;
+
+  IF v_tipo = 'pronto' THEN
+    -- imóvel pronto: o agenciador retira pontos do percentual do corretor
+    -- voluire = 5 pontos (ficam com a empresa), colega corretor = 10 pontos, próprio = 0
+    v_desconto := CASE
+      WHEN v_ag_tipo = 'voluire' THEN 5
+      WHEN v_ag_tipo = 'corretor' AND v_captador IS NOT NULL THEN 10
+      ELSE 0
+    END;
+
+    SELECT COALESCE(SUM(
+             v_total * GREATEST(vc.percentual_corretor - v_desconto, 0) / 100
+                     * vc.participacao_percentual / 100), 0)
+      INTO v_corretores FROM public.venda_corretores vc WHERE vc.venda_id = p_venda_id;
+
+    IF v_ag_tipo = 'corretor' AND v_captador IS NOT NULL THEN
+      v_agenciador_valor := v_total * 10 / 100;
+      v_corretores := v_corretores + v_agenciador_valor;
+    END IF;
+  ELSE
+    SELECT COALESCE(SUM(v_total * vc.percentual_corretor / 100 * vc.participacao_percentual / 100), 0)
+      INTO v_corretores FROM public.venda_corretores vc WHERE vc.venda_id = p_venda_id;
+  END IF;
+
+  INSERT INTO public.comissoes (venda_id, percentual_total, valor_total, valor_corretores, valor_empresa)
+  VALUES (p_venda_id, COALESCE(v_pct,6), v_total, v_corretores, v_total - v_corretores)
+  ON CONFLICT (venda_id) DO UPDATE
+    SET percentual_total = EXCLUDED.percentual_total,
+        valor_total = EXCLUDED.valor_total,
+        valor_corretores = EXCLUDED.valor_corretores,
+        valor_empresa = EXCLUDED.valor_empresa,
+        updated_at = now();
+END;
+$function$;
