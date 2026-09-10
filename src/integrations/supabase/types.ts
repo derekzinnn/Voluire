@@ -577,8 +577,10 @@ export type Database = {
           numero_contrato: string
           observacao: string | null
           parceiro_id: string | null
+          parceria_nome: string | null
           roi_trafego: string | null
           status: string
+          tem_parceria: boolean
           unidade: string
           updated_at: string
           valor: number
@@ -597,8 +599,10 @@ export type Database = {
           numero_contrato: string
           observacao?: string | null
           parceiro_id?: string | null
+          parceria_nome?: string | null
           roi_trafego?: string | null
           status?: string
+          tem_parceria?: boolean
           unidade: string
           updated_at?: string
           valor: number
@@ -617,8 +621,10 @@ export type Database = {
           numero_contrato?: string
           observacao?: string | null
           parceiro_id?: string | null
+          parceria_nome?: string | null
           roi_trafego?: string | null
           status?: string
+          tem_parceria?: boolean
           unidade?: string
           updated_at?: string
           valor?: number

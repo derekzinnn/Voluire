@@ -15,6 +15,13 @@
       "when": 1789063301906,
       "tag": "0001_add_vendedor_and_remove_gestor_faixas_logic",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1789063398522,
+      "tag": "0002_add_parceria_venda",
+      "breakpoints": true
     }
   ]
 }
