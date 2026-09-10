@@ -873,7 +873,7 @@ export default function Vendas() {
                 <div className="space-y-2 sm:col-span-2">
                   <Label>Qual outro corretor? *</Label>
                   <div className="flex gap-2">
-                    <Select value={form.corretor2_id} onValueChange={(v) => { set("corretor2_id", v); if (v !== NONE && Number(form.corretor2_part) === 0) { set("corretor1_part", "25"); set("corretor2_part", "25"); } }}>
+                    <Select value={form.corretor2_id} onValueChange={(v) => { set("corretor2_id", v); if (v !== NONE && Number(form.corretor2_part) === 0) { set("corretor1_part", isPronto ? "50" : "25"); set("corretor2_part", isPronto ? "50" : "25"); } }}>
                       <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                       <SelectContent className="max-h-60">
                         {corretores.filter((c) => c.id !== form.corretor1_id).map((c) => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}
