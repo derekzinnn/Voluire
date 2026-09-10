@@ -29,7 +29,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [avisosOpen, setAvisosOpen] = useState(false);
   const location = useLocation();
-  const { role, loading: roleLoading, isGestor } = useUserRole();
+  const { role, permissions, loading: roleLoading, isGestor, can } = useUserRole();
   const qtdAtrasadas = useParcelasVencidasCount();
 
 
