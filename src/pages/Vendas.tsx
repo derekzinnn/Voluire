@@ -473,9 +473,24 @@ export default function Vendas() {
             <Button><Plus className="mr-2 h-4 w-4" />Novo contrato</Button>
           </DialogTrigger>
           <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>{editId ? "Editar contrato" : "Novo contrato"}</DialogTitle>
-              <DialogDescription>{STEPS[step].desc}</DialogDescription>
+            <DialogHeader className="flex-row items-start justify-between gap-4">
+              <div className="space-y-1.5">
+                <DialogTitle>{editId ? "Editar contrato" : "Novo contrato"}</DialogTitle>
+                <DialogDescription>{STEPS[step].desc}</DialogDescription>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">Status</Label>
+                <Select value={form.status} onValueChange={(v) => set("status", v)}>
+                  <SelectTrigger className="w-36">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ativa">Ativa</SelectItem>
+                    <SelectItem value="quitada">Quitada</SelectItem>
+                    <SelectItem value="distrato">Distrato</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </DialogHeader>
 
             {/* Stepper */}
