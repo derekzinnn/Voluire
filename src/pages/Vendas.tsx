@@ -270,6 +270,12 @@ export default function Vendas() {
     mutationFn: async () => {
       if (!form.numero_contrato.trim()) throw new Error("Informe o número do contrato.");
       if (!form.corretor1_id) throw new Error("Selecione o corretor responsável.");
+      if (isPronto) {
+        if (form.agenciador_tipo === "corretor" && form.captador_corretor_id === NONE)
+          throw new Error("Selecione o colega que agenciou o imóvel.");
+      } else if (form.empreendimento_id !== NONE && form.parceiro_id === NONE) {
+        throw new Error("Venda de empreendimento exige a construtora (parceiro).");
+      }
       const p1 = Number(form.corretor1_part) || 0;
       const p2 = form.corretor2_id !== NONE ? Number(form.corretor2_part) || 0 : 0;
       if (form.corretor2_id !== NONE && Math.abs(p1 + p2 - 100) > 0.01)
