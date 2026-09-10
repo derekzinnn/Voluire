@@ -176,18 +176,12 @@ export default function Vendas() {
       }
       if (!form.corretor1_id) return erro("Selecione o corretor responsável.");
       if (temOutroCorretor && form.corretor2_id === NONE) return erro("Selecione qual foi o outro corretor da venda.");
-      const p1 = Number(form.corretor1_part) || 0;
-      const p2 = form.corretor2_id !== NONE ? Number(form.corretor2_part) || 0 : 0;
-      if (form.corretor2_id !== NONE) {
-        if (isPronto) {
-          if (p1 < 0 || p1 > 100) return erro("Participação do corretor responsável deve estar entre 0% e 100%.");
-          if (p2 < 0 || p2 > 100) return erro("Participação do outro corretor deve estar entre 0% e 100%.");
-          if (Math.abs(p1 + p2 - 100) > 0.01) return erro("A participação dos dois corretores deve somar 100%.");
-        } else {
-          if (p1 < 22.5 || p1 > 25) return erro("Participação do corretor responsável deve estar entre 22,5% e 25%.");
-          if (p2 < 22.5 || p2 > 25) return erro("Participação do outro corretor deve estar entre 22,5% e 25%.");
-          if (p1 + p2 > 50) return erro("A soma das participações dos corretores não pode ultrapassar 50%.");
-        }
+      if (form.corretor2_id !== NONE && isPronto) {
+        const p1 = Number(form.corretor1_part) || 0;
+        const p2 = Number(form.corretor2_part) || 0;
+        if (p1 < 0 || p1 > 100) return erro("Participação do corretor responsável deve estar entre 0% e 100%.");
+        if (p2 < 0 || p2 > 100) return erro("Participação do outro corretor deve estar entre 0% e 100%.");
+        if (Math.abs(p1 + p2 - 100) > 0.01) return erro("A participação dos dois corretores deve somar 100%.");
       }
     }
     if (step === 2) {
@@ -308,16 +302,10 @@ export default function Vendas() {
       }
       const p1 = Number(form.corretor1_part) || 0;
       const p2 = form.corretor2_id !== NONE ? Number(form.corretor2_part) || 0 : 0;
-      if (form.corretor2_id !== NONE) {
-        if (isPronto) {
-          if (p1 < 0 || p1 > 100) throw new Error("Participação do corretor responsável deve estar entre 0% e 100%.");
-          if (p2 < 0 || p2 > 100) throw new Error("Participação do outro corretor deve estar entre 0% e 100%.");
-          if (Math.abs(p1 + p2 - 100) > 0.01) throw new Error("A participação dos dois corretores deve somar 100%.");
-        } else {
-          if (p1 < 22.5 || p1 > 25) throw new Error("Participação do corretor responsável deve estar entre 22,5% e 25%.");
-          if (p2 < 22.5 || p2 > 25) throw new Error("Participação do outro corretor deve estar entre 22,5% e 25%.");
-          if (p1 + p2 > 50) throw new Error("A soma das participações dos corretores não pode ultrapassar 50%.");
-        }
+      if (form.corretor2_id !== NONE && isPronto) {
+        if (p1 < 0 || p1 > 100) throw new Error("Participação do corretor responsável deve estar entre 0% e 100%.");
+        if (p2 < 0 || p2 > 100) throw new Error("Participação do outro corretor deve estar entre 0% e 100%.");
+        if (Math.abs(p1 + p2 - 100) > 0.01) throw new Error("A participação dos dois corretores deve somar 100%.");
       }
 
       const payload = {
@@ -357,12 +345,24 @@ export default function Vendas() {
       }
 
       const pct = (id: string) => Number(corretores.find((c) => c.id === id)?.comissao_percentual) || 50;
-      const part1 = isPronto ? (form.corretor2_id !== NONE ? p1 : 100) : (form.corretor2_id !== NONE ? p1 : 50);
+      let part1: number, part2: number;
+      if (isPronto) {
+        part1 = form.corretor2_id !== NONE ? p1 : 100;
+        part2 = p2;
+      } else {
+        if (form.corretor2_id !== NONE) {
+          part1 = pct(form.corretor1_id) / 2;
+          part2 = pct(form.corretor2_id) / 2;
+        } else {
+          part1 = pct(form.corretor1_id);
+          part2 = 0;
+        }
+      }
       const rows = [
         { venda_id: vendaId!, corretor_id: form.corretor1_id, participacao_percentual: part1, percentual_corretor: pct(form.corretor1_id) },
       ];
       if (form.corretor2_id !== NONE)
-        rows.push({ venda_id: vendaId!, corretor_id: form.corretor2_id, participacao_percentual: p2, percentual_corretor: pct(form.corretor2_id) });
+        rows.push({ venda_id: vendaId!, corretor_id: form.corretor2_id, participacao_percentual: part2, percentual_corretor: pct(form.corretor2_id) });
       const { error: vcErr } = await supabase.from("venda_corretores").insert(rows);
       if (vcErr) throw vcErr;
 
@@ -847,8 +847,16 @@ export default function Vendas() {
                       {corretores.map((c) => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}
                     </SelectContent>
                   </Select>
-                  {form.corretor2_id !== NONE && (
-                    <Input className="w-28" type="number" min={isPronto ? "0" : "22.5"} max={isPronto ? "100" : "25"} step="0.1" value={form.corretor1_part} onChange={(e) => set("corretor1_part", e.target.value)} placeholder="% part." />
+                  {isPronto ? (
+                    form.corretor2_id !== NONE && (
+                      <Input className="w-28" type="number" min="0" max="100" step="0.1" value={form.corretor1_part} onChange={(e) => set("corretor1_part", e.target.value)} placeholder="% part." />
+                    )
+                  ) : (
+                    <div className="flex w-28 items-center justify-center rounded-md border bg-muted px-2 text-sm">
+                      {form.corretor2_id !== NONE
+                        ? ((Number(corretores.find((c) => c.id === form.corretor1_id)?.comissao_percentual) || 50) / 2).toFixed(1).replace(".0", "")
+                        : (Number(corretores.find((c) => c.id === form.corretor1_id)?.comissao_percentual) || 50).toFixed(1).replace(".0", "")}%
+                    </div>
                   )}
                 </div>
               </div>
@@ -858,8 +866,8 @@ export default function Vendas() {
                   value={form.corretor2_id !== NONE || temOutroCorretor ? "sim" : "nao"}
                   onValueChange={(v) => {
                     setTemOutroCorretor(v === "sim");
-                    if (v === "nao") { set("corretor2_id", NONE); set("corretor1_part", isPronto ? "100" : "50"); set("corretor2_part", "0"); }
-                    else if (Number(form.corretor2_part) === 0) { set("corretor1_part", isPronto ? "50" : "25"); set("corretor2_part", isPronto ? "50" : "25"); }
+                    if (v === "nao") { set("corretor2_id", NONE); if (isPronto) { set("corretor1_part", "100"); set("corretor2_part", "0"); } }
+                    else if (isPronto && Number(form.corretor2_part) === 0) { set("corretor1_part", "50"); set("corretor2_part", "50"); }
                   }}
                 >
                   <SelectTrigger><SelectValue /></SelectTrigger>
@@ -873,14 +881,20 @@ export default function Vendas() {
                 <div className="space-y-2 sm:col-span-2">
                   <Label>Qual outro corretor? *</Label>
                   <div className="flex gap-2">
-                    <Select value={form.corretor2_id} onValueChange={(v) => { set("corretor2_id", v); if (v !== NONE && Number(form.corretor2_part) === 0) { set("corretor1_part", isPronto ? "50" : "25"); set("corretor2_part", isPronto ? "50" : "25"); } }}>
+                    <Select value={form.corretor2_id} onValueChange={(v) => { set("corretor2_id", v); if (isPronto && v !== NONE && Number(form.corretor2_part) === 0) { set("corretor1_part", "50"); set("corretor2_part", "50"); } }}>
                       <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                       <SelectContent className="max-h-60">
                         {corretores.filter((c) => c.id !== form.corretor1_id).map((c) => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}
                       </SelectContent>
                     </Select>
                     {form.corretor2_id !== NONE && (
-                      <Input className="w-28" type="number" min={isPronto ? "0" : "22.5"} max={isPronto ? "100" : "25"} step="0.1" value={form.corretor2_part} onChange={(e) => set("corretor2_part", e.target.value)} placeholder="% part." />
+                      isPronto ? (
+                        <Input className="w-28" type="number" min="0" max="100" step="0.1" value={form.corretor2_part} onChange={(e) => set("corretor2_part", e.target.value)} placeholder="% part." />
+                      ) : (
+                        <div className="flex w-28 items-center justify-center rounded-md border bg-muted px-2 text-sm">
+                          {((Number(corretores.find((c) => c.id === form.corretor2_id)?.comissao_percentual) || 50) / 2).toFixed(1).replace(".0", "")}%
+                        </div>
+                      )
                     )}
                   </div>
                 </div>
