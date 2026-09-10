@@ -18,7 +18,8 @@ import { Plus, Pencil, Trash2 } from "lucide-react";
 export default function Empreendimentos() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const { isGestor } = useUserRole();
+  const { can } = useUserRole();
+  const isGestor = can("empreendimentos.gerenciar");
   const [open, setOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState({ nome: "", tipo: "lancamento", descricao: "" });

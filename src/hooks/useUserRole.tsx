@@ -108,7 +108,6 @@ export function useUserRole(): UserRoleData {
     if (isDiretor) return true;
     // Gerente sempre administra a própria equipe (escopo garantido no banco)
     if (role === "gerente" && (permission === "vendas.gerenciar" || permission === "vendas.ver_todas")) return true;
-    if (role === "corretor" && permission === "vendas.gerenciar") return true;
     return permissions.includes(permission);
   };
 
