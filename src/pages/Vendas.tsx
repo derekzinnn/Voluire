@@ -503,6 +503,24 @@ export default function Vendas() {
                 <DatePickerField value={form.data_venda} onChange={(v) => set("data_venda", v)} />
               </div>
               <div className="space-y-2">
+                <Label>Tipo de imóvel</Label>
+                <Select value={form.empreendimento_id} onValueChange={(v) => set("empreendimento_id", v)}>
+                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={NONE}>Não definido</SelectItem>
+                    {(empreendimentos as any[]).map((e) => (
+                      <SelectItem key={e.id} value={e.id}>
+                        {e.nome} · {EMPREENDIMENTO_TIPO_LABELS[e.tipo] ?? e.tipo}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Unidade *</Label>
+                <Input value={form.unidade} onChange={(e) => set("unidade", e.target.value)} />
+              </div>
+              <div className="space-y-2">
                 <Label>Cliente comprador *</Label>
                 <Input value={form.cliente_nome} onChange={(e) => set("cliente_nome", e.target.value)} placeholder="Quem está comprando" />
               </div>
@@ -511,50 +529,27 @@ export default function Vendas() {
                 {isPronto ? (
                   <Input value={form.vendedor_nome} onChange={(e) => set("vendedor_nome", e.target.value)} placeholder="Dono do imóvel" />
                 ) : (
-                  <Input value={parceiroNome} disabled placeholder="Construtora selecionada abaixo" />
+                  <Input value={parceiroNome} disabled placeholder="Preenchido com a construtora" />
                 )}
                 <p className="text-xs text-muted-foreground">
                   {isPronto
                     ? "Imóvel pronto: informe o proprietário que está vendendo."
-                    : "Empreendimento: o vendedor é a construtora."}
+                    : "Empreendimento: o vendedor é a construtora selecionada."}
                 </p>
               </div>
-              <div className="space-y-2">
-                <Label>Unidade *</Label>
-                <Input value={form.unidade} onChange={(e) => set("unidade", e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label>Empreendimento</Label>
-                <Select value={form.empreendimento_id} onValueChange={(v) => set("empreendimento_id", v)}>
-                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={NONE}>Sem empreendimento</SelectItem>
-                    {(empreendimentos as any[]).map((e) => (
-                      <SelectItem key={e.id} value={e.id}>
-                        {e.nome} · {EMPREENDIMENTO_TIPO_LABELS[e.tipo] ?? e.tipo}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {isPronto && (
-                  <p className="text-xs text-muted-foreground">
-                    Imóvel pronto: informe quem agenciou — o agenciador retira pontos do percentual do corretor.
-                  </p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label>Construtora / imobiliária {isPronto ? "" : "*"}</Label>
-                <Select value={form.parceiro_id} onValueChange={(v) => set("parceiro_id", v)}>
-                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={NONE}>Sem parceiro</SelectItem>
-                    {parceiros.map((p) => <SelectItem key={p.id} value={p.id}>{p.nome}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-                {!isPronto && (
+              {!isPronto && (
+                <div className="space-y-2">
+                  <Label>Construtora / imobiliária {form.empreendimento_id !== NONE ? "*" : ""}</Label>
+                  <Select value={form.parceiro_id} onValueChange={(v) => set("parceiro_id", v)}>
+                    <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={NONE}>Sem parceiro</SelectItem>
+                      {parceiros.map((p) => <SelectItem key={p.id} value={p.id}>{p.nome}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
                   <p className="text-xs text-muted-foreground">Venda de empreendimento exige a construtora.</p>
-                )}
-              </div>
+                </div>
+              )}
               {isPronto && (
                 <>
                   <div className="space-y-2">
@@ -567,6 +562,9 @@ export default function Vendas() {
                         <SelectItem value="corretor">Outro corretor / colega (10%)</SelectItem>
                       </SelectContent>
                     </Select>
+                    <p className="text-xs text-muted-foreground">
+                      O agenciador retira pontos do percentual do corretor.
+                    </p>
                   </div>
                   {form.agenciador_tipo === "corretor" && (
                     <div className="space-y-2">
@@ -885,7 +883,7 @@ export default function Vendas() {
               <TableRow>
                 <TableHead>Contrato</TableHead>
                 <TableHead>Comprador / Vendedor</TableHead>
-                <TableHead>Empreendimento</TableHead>
+                <TableHead>Tipo de imóvel</TableHead>
                 <TableHead>Parceiro</TableHead>
                 <TableHead>Corretores</TableHead>
                 <TableHead>Valor</TableHead>
