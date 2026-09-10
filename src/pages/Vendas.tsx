@@ -152,6 +152,7 @@ export default function Vendas() {
   const [parcelasVenda, setParcelasVenda] = useState<any | null>(null);
   const [parcelasEdit, setParcelasEdit] = useState<{ valor: string; data_prevista: string }[]>([]);
   const [step, setStep] = useState(0);
+  const [temOutroCorretor, setTemOutroCorretor] = useState(false);
   const set = (k: keyof FormState, v: string) => setForm((f) => ({ ...f, [k]: v }));
 
   function avancar() {
