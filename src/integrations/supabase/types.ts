@@ -565,6 +565,7 @@ export type Database = {
       }
       vendas: {
         Row: {
+          agenciador_tipo: string
           captador_corretor_id: string | null
           cliente_nome: string
           comissao_percentual_bruta: number
@@ -583,6 +584,7 @@ export type Database = {
           valor: number
         }
         Insert: {
+          agenciador_tipo?: string
           captador_corretor_id?: string | null
           cliente_nome: string
           comissao_percentual_bruta?: number
@@ -601,6 +603,7 @@ export type Database = {
           valor: number
         }
         Update: {
+          agenciador_tipo?: string
           captador_corretor_id?: string | null
           cliente_nome?: string
           comissao_percentual_bruta?: number

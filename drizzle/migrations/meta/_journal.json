@@ -1,0 +1,13 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1789063126301,
+      "tag": "0000_agenciador_e_comissao_bruta",
+      "breakpoints": true
+    }
+  ]
+}
