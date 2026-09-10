@@ -67,7 +67,9 @@ Deno.serve(async (req) => {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return json({ error: "E-mail inválido" }, 400);
     if (nome.length > 120 || email.length > 255) return json({ error: "Campos muito longos" }, 400);
 
-    const role = ["corretor", "gerente", "diretor"].includes(body.role) ? body.role : "corretor";
+    const role = ["corretor", "gerente", "diretor", "financeiro", "administrativo"].includes(body.role)
+      ? body.role
+      : "corretor";
     const equipeId = clean(body.equipe_id);
     const corretorExistenteId = clean(body.corretor_id_existente);
     const criarCorretor = body.criar_corretor !== false;
