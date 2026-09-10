@@ -795,6 +795,23 @@ export default function Vendas() {
                   <DatePickerField value={form.primeira_parcela} onChange={(v) => set("primeira_parcela", v)} />
                 </div>
               )}
+
+              <div className="rounded-md border bg-muted/40 p-3 text-sm sm:col-span-2">
+                <p className="mb-2 font-medium">Resumo do contrato</p>
+                <div className="grid gap-1 text-xs text-muted-foreground sm:grid-cols-2">
+                  <span>Contrato: {form.numero_contrato || "—"}</span>
+                  <span>Data: {form.data_venda ? formatDate(form.data_venda) : "—"}</span>
+                  <span>Comprador: {form.cliente_nome || "—"}</span>
+                  <span>Vendedor: {vendedorFinal || "—"}</span>
+                  <span>Unidade: {form.unidade || "—"}</span>
+                  <span>Valor: {formatCurrency(Number(form.valor) || 0)}</span>
+                  <span>Comissão bruta: {formatCurrency(comissaoBruta)}</span>
+                  <span>Pagamento: {FORMA_PAGAMENTO_LABELS[form.forma_pagamento] ?? form.forma_pagamento}</span>
+                  <span>
+                    Parcelas: {form.forma_pagamento === "a_vista" ? "1 (à vista)" : `${parcelasEdit.length}x`}
+                  </span>
+                </div>
+              </div>
             </div>
             )}
 
@@ -874,23 +891,6 @@ export default function Vendas() {
               <div className="space-y-2 sm:col-span-2">
                 <Label>Observação</Label>
                 <Textarea value={form.observacao} onChange={(e) => set("observacao", e.target.value)} rows={2} />
-              </div>
-
-              <div className="rounded-md border bg-muted/40 p-3 text-sm sm:col-span-2">
-                <p className="mb-2 font-medium">Resumo do contrato</p>
-                <div className="grid gap-1 text-xs text-muted-foreground sm:grid-cols-2">
-                  <span>Contrato: {form.numero_contrato || "—"}</span>
-                  <span>Data: {form.data_venda ? formatDate(form.data_venda) : "—"}</span>
-                  <span>Comprador: {form.cliente_nome || "—"}</span>
-                  <span>Vendedor: {vendedorFinal || "—"}</span>
-                  <span>Unidade: {form.unidade || "—"}</span>
-                  <span>Valor: {formatCurrency(Number(form.valor) || 0)}</span>
-                  <span>Comissão bruta: {formatCurrency(comissaoBruta)}</span>
-                  <span>Pagamento: {FORMA_PAGAMENTO_LABELS[form.forma_pagamento] ?? form.forma_pagamento}</span>
-                  <span>
-                    Parcelas: {form.forma_pagamento === "a_vista" ? "1 (à vista)" : `${parcelasEdit.length}x`}
-                  </span>
-                </div>
               </div>
             </div>
             )}
