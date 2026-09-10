@@ -156,8 +156,18 @@ export default function Vendas() {
       if (!form.data_venda) return erro("Informe a data da venda.");
       if (!form.cliente_nome.trim()) return erro("Informe o cliente.");
       if (!form.unidade.trim()) return erro("Informe a unidade.");
+      if (isPronto) {
+        if (form.agenciador_tipo === "corretor" && form.captador_corretor_id === NONE)
+          return erro("Selecione o colega que agenciou o imóvel.");
+      } else {
+        if (form.empreendimento_id === NONE) return erro("Selecione o empreendimento.");
+        if (form.parceiro_id === NONE) return erro("Empreendimento exige a construtora (parceiro).");
+      }
     }
-    if (step === 1 && !(Number(form.valor) > 0)) return erro("Informe o valor da venda.");
+    if (step === 1) {
+      if (!(Number(form.valor) > 0)) return erro("Informe o valor da venda.");
+      if (!(Number(form.comissao_percentual_bruta) > 0)) return erro("Informe a comissão bruta (%).");
+    }
     if (step === 2) {
       if (form.forma_pagamento === "a_vista") {
         if (!form.primeira_parcela) return erro("Informe a data prevista de recebimento.");
@@ -245,7 +255,16 @@ export default function Vendas() {
 
   const empSelecionado = (empreendimentos as any[]).find((e) => e.id === form.empreendimento_id);
   const isPronto = empSelecionado?.tipo === "pronto";
-  const comissaoBruta = (Number(form.valor) || 0) * 0.06;
+  const pctBruta = Number(form.comissao_percentual_bruta) || 0;
+  const comissaoBruta = (Number(form.valor) || 0) * pctBruta / 100;
+  const descontoAgenciador = !isPronto
+    ? 0
+    : form.agenciador_tipo === "voluire"
+      ? 5
+      : form.agenciador_tipo === "corretor"
+        ? 10
+        : 0;
+  const splitCorretor1 = Number(corretores.find((c) => c.id === form.corretor1_id)?.comissao_percentual) || 50;
 
   const salvar = useMutation({
     mutationFn: async () => {
@@ -264,9 +283,15 @@ export default function Vendas() {
         parceiro_id: form.parceiro_id === NONE ? null : form.parceiro_id,
         valor: Number(form.valor),
         data_venda: form.data_venda,
-        comissao_percentual_bruta: 6,
+        comissao_percentual_bruta: Number(form.comissao_percentual_bruta) || 6,
         forma_pagamento: form.forma_pagamento,
-        captador_corretor_id: form.captador_corretor_id === NONE ? null : form.captador_corretor_id,
+        captador_corretor_id:
+          isPronto && form.agenciador_tipo === "corretor" && form.captador_corretor_id !== NONE
+            ? form.captador_corretor_id
+            : form.captador_corretor_id === NONE
+              ? null
+              : form.captador_corretor_id,
+        agenciador_tipo: isPronto ? form.agenciador_tipo : "proprio",
         status: form.status,
         observacao: form.observacao || null,
       };
@@ -366,9 +391,10 @@ export default function Vendas() {
       parceiro_id: v.parceiro_id ?? NONE,
       valor: String(v.valor ?? ""),
       data_venda: v.data_venda ?? "",
-      comissao_percentual_bruta: "6",
+      comissao_percentual_bruta: String(v.comissao_percentual_bruta ?? 6),
       forma_pagamento: v.forma_pagamento ?? "a_vista",
       captador_corretor_id: v.captador_corretor_id ?? NONE,
+      agenciador_tipo: v.agenciador_tipo ?? "proprio",
       status: v.status ?? "ativa",
       observacao: v.observacao ?? "",
       corretor1_id: parts[0]?.corretor_id ?? "",
