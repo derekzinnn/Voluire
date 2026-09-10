@@ -193,6 +193,8 @@ export default function VincularUsuarioDialog({ triggerLabel = "Vincular usuári
                   <SelectContent>
                     <SelectItem value="corretor">Corretor</SelectItem>
                     <SelectItem value="gerente">Gerente</SelectItem>
+                    <SelectItem value="financeiro">Financeiro</SelectItem>
+                    <SelectItem value="administrativo">Administrativo</SelectItem>
                     <SelectItem value="diretor">Diretor</SelectItem>
                   </SelectContent>
                 </Select>

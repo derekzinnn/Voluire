@@ -450,6 +450,33 @@ export type Database = {
         }
         Relationships: []
       }
+      role_permissions: {
+        Row: {
+          allowed: boolean
+          created_at: string
+          id: string
+          permission: string
+          role: Database["public"]["Enums"]["app_role"]
+          updated_at: string
+        }
+        Insert: {
+          allowed?: boolean
+          created_at?: string
+          id?: string
+          permission: string
+          role: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
+        }
+        Update: {
+          allowed?: boolean
+          created_at?: string
+          id?: string
+          permission?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
@@ -688,6 +715,7 @@ export type Database = {
       get_corretor_cpf: { Args: { p_corretor_id: string }; Returns: string }
       get_my_corretor_id: { Args: never; Returns: string }
       get_my_equipe_ids: { Args: never; Returns: string[] }
+      has_permission: { Args: { _permission: string }; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -751,7 +779,13 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "corretor" | "financeiro" | "diretor" | "gerente"
+      app_role:
+        | "admin"
+        | "corretor"
+        | "financeiro"
+        | "diretor"
+        | "gerente"
+        | "administrativo"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -879,7 +913,14 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "corretor", "financeiro", "diretor", "gerente"],
+      app_role: [
+        "admin",
+        "corretor",
+        "financeiro",
+        "diretor",
+        "gerente",
+        "administrativo",
+      ],
     },
   },
 } as const

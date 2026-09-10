@@ -2,20 +2,54 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 
-export type AppRole = "diretor" | "gerente" | "corretor";
+export type AppRole = "diretor" | "gerente" | "corretor" | "financeiro" | "administrativo";
+
+export const ROLE_LABELS: Record<string, string> = {
+  diretor: "Diretor",
+  gerente: "Gerente",
+  corretor: "Corretor",
+  financeiro: "Financeiro",
+  administrativo: "Administrativo",
+};
+
+/** Cargos com permissões configuráveis (diretor sempre tem tudo) */
+export const ROLES_CONFIGURAVEIS: AppRole[] = [
+  "financeiro",
+  "administrativo",
+  "gerente",
+  "corretor",
+];
+
+export const PERMISSOES: { key: string; label: string; descricao: string }[] = [
+  { key: "dashboard.ver", label: "Ver dashboard", descricao: "Acessa a página inicial com os números" },
+  { key: "vendas.ver_todas", label: "Ver todas as vendas", descricao: "Vê vendas de qualquer corretor" },
+  { key: "vendas.gerenciar", label: "Registrar e editar vendas", descricao: "Cria contratos, parcelas e recebimentos" },
+  { key: "financeiro.ver", label: "Ver financeiro", descricao: "Acessa o mês gerencial e o fluxo de caixa" },
+  { key: "financeiro.gerenciar", label: "Lançar despesas e comissões", descricao: "Edita despesas e comissões" },
+  { key: "corretores.ver_todos", label: "Ver todos os corretores", descricao: "Vê a lista completa de corretores" },
+  { key: "corretores.gerenciar", label: "Cadastrar e editar corretores", descricao: "Cria e altera fichas de corretor" },
+  { key: "parceiros.gerenciar", label: "Gerenciar parceiros", descricao: "Cadastra construtoras e parceiros" },
+  { key: "empreendimentos.gerenciar", label: "Gerenciar empreendimentos", descricao: "Cadastra empreendimentos e imóveis" },
+  { key: "usuarios.gerenciar", label: "Gerenciar usuários e cargos", descricao: "Convida usuários e altera permissões" },
+];
 
 interface UserRoleData {
   role: AppRole | null;
+  roles: string[];
+  permissions: string[];
   corretorId: string | null;
   equipeIds: string[];
   isDiretor: boolean;
   isGestor: boolean;
+  can: (permission: string) => boolean;
   loading: boolean;
 }
 
 export function useUserRole(): UserRoleData {
   const { user, loading: authLoading } = useAuth();
   const [role, setRole] = useState<AppRole | null>(null);
+  const [roles, setRoles] = useState<string[]>([]);
+  const [permissions, setPermissions] = useState<string[]>([]);
   const [corretorId, setCorretorId] = useState<string | null>(null);
   const [equipeIds, setEquipeIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -28,29 +62,37 @@ export function useUserRole(): UserRoleData {
 
     if (!user) {
       setRole(null);
+      setRoles([]);
+      setPermissions([]);
       setCorretorId(null);
       setEquipeIds([]);
       setLoading(false);
       return;
     }
 
-
     async function fetchData() {
-      const [roleRes, corretorRes, equipesRes] = await Promise.all([
+      const [roleRes, corretorRes, equipesRes, permRes] = await Promise.all([
         supabase.from("user_roles").select("role").eq("user_id", user!.id),
         supabase.from("corretores").select("id").eq("user_id", user!.id).maybeSingle(),
         supabase.from("equipes").select("id").eq("gestor_user_id", user!.id).eq("ativo", true),
+        supabase.from("role_permissions").select("role, permission, allowed").eq("allowed", true),
       ]);
 
       // Um usuário pode ter várias funções (ex.: admin + diretor).
       // Vale sempre a de maior privilégio.
-      const roles = (roleRes.data ?? []).map((r) => r.role as string);
-      const prioridade: AppRole[] = ["diretor", "gerente", "corretor"];
+      const userRoles = (roleRes.data ?? []).map((r) => r.role as string);
+      const prioridade: AppRole[] = ["diretor", "gerente", "financeiro", "administrativo", "corretor"];
       const efetiva =
-        prioridade.find((p) => roles.includes(p)) ??
-        (roles.includes("admin") ? "diretor" : null);
+        prioridade.find((p) => userRoles.includes(p)) ??
+        (userRoles.includes("admin") ? "diretor" : null);
 
+      const perms = (permRes.data ?? [])
+        .filter((p: any) => userRoles.includes(p.role))
+        .map((p: any) => p.permission as string);
+
+      setRoles(userRoles);
       setRole(efetiva);
+      setPermissions(Array.from(new Set(perms)));
       setCorretorId(corretorRes.data?.id ?? null);
       setEquipeIds((equipesRes.data ?? []).map((e) => e.id));
       setLoading(false);
@@ -59,39 +101,47 @@ export function useUserRole(): UserRoleData {
     fetchData();
   }, [user, authLoading]);
 
+  const isDiretor = role === "diretor";
+  const isGestor = role === "diretor" || role === "gerente";
+
+  const can = (permission: string) => {
+    if (isDiretor) return true;
+    // Gerente sempre administra a própria equipe (escopo garantido no banco)
+    if (role === "gerente" && (permission === "vendas.gerenciar" || permission === "vendas.ver_todas")) return true;
+    return permissions.includes(permission);
+  };
+
   return {
     role,
+    roles,
+    permissions,
     corretorId,
     equipeIds,
-    isDiretor: role === "diretor",
-    isGestor: role === "diretor" || role === "gerente",
+    isDiretor,
+    isGestor,
+    can,
     loading,
   };
 }
 
 // Permission helpers
-export function canAccessPage(role: AppRole | null, page: string): boolean {
+export function canAccessPage(role: AppRole | null, page: string, permissions: string[] = []): boolean {
   if (!role) return false;
+  if (role === "diretor") return true;
+
+  const has = (p: string) => permissions.includes(p);
 
   // Ficha do corretor: acesso governado por can_view_corretor no banco
   if (page.startsWith("/corretores/")) return true;
 
-  // Gestão de usuários: somente diretores
-  if (page === "/gestao-usuarios") return role === "diretor";
+  if (page === "/") return role === "gerente" || role === "corretor" || has("dashboard.ver");
+  if (page === "/vendas") return role === "gerente" || role === "corretor" || has("vendas.ver_todas") || has("vendas.gerenciar");
+  if (page === "/corretores") return role === "gerente" || has("corretores.ver_todos") || has("corretores.gerenciar");
+  if (page === "/financeiro") return role === "gerente" || has("financeiro.ver") || has("financeiro.gerenciar");
+  if (page === "/parceiros") return role === "gerente" || has("parceiros.gerenciar");
+  if (page === "/empreendimentos") return role === "gerente" || has("empreendimentos.gerenciar");
+  if (page === "/minha-equipe") return role === "gerente";
+  if (page === "/gestao-usuarios") return has("usuarios.gerenciar");
 
-  // Parceiros: diretor e gerente
-  if (page === "/parceiros") return role === "diretor" || role === "gerente";
-
-  // Empreendimentos: diretor e gerente
-  if (page === "/empreendimentos") return role === "diretor" || role === "gerente";
-
-  // Área de gestão de pessoas: diretor e gerente
-  if (page === "/minha-equipe") return role === "diretor" || role === "gerente";
-
-  if (role === "diretor" || role === "gerente") return true;
-
-
-  // Corretor allowed pages
-  const corretorPages = ["/", "/vendas"];
-  return corretorPages.includes(page);
+  return false;
 }

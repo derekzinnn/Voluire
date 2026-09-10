@@ -143,7 +143,8 @@ const emptyForm = (): FormState => ({
 export default function Vendas() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const { isGestor } = useUserRole();
+  const { can } = useUserRole();
+  const isGestor = can("vendas.gerenciar");
   const [open, setOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm());
