@@ -152,6 +152,7 @@ export default function Vendas() {
   const [parcelasVenda, setParcelasVenda] = useState<any | null>(null);
   const [parcelasEdit, setParcelasEdit] = useState<{ valor: string; data_prevista: string }[]>([]);
   const [step, setStep] = useState(0);
+  const [temOutroCorretor, setTemOutroCorretor] = useState(false);
   const set = (k: keyof FormState, v: string) => setForm((f) => ({ ...f, [k]: v }));
 
   function avancar() {
@@ -284,6 +285,7 @@ export default function Vendas() {
     mutationFn: async () => {
       if (!form.numero_contrato.trim()) throw new Error("Informe o número do contrato.");
       if (!form.corretor1_id) throw new Error("Selecione o corretor responsável.");
+      if (temOutroCorretor && form.corretor2_id === NONE) throw new Error("Selecione qual foi o outro corretor da venda.");
       if (isPronto) {
         if (form.agenciador_tipo === "corretor" && form.captador_corretor_id === NONE)
           throw new Error("Selecione o colega que agenciou o imóvel.");
@@ -431,6 +433,7 @@ export default function Vendas() {
       qtd_parcelas: String((ps ?? []).length || 1),
       primeira_parcela: (ps ?? [])[0]?.data_prevista ?? v.data_venda ?? new Date().toISOString().split("T")[0],
     });
+    setTemOutroCorretor(!!parts[1]?.corretor_id);
     setStep(0);
     setOpen(true);
   }
@@ -460,7 +463,7 @@ export default function Vendas() {
       </div>
 
       {isGestor && (
-        <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) { setEditId(null); setForm(emptyForm()); setParcelasEdit([]); setStep(0); } }}>
+        <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) { setEditId(null); setForm(emptyForm()); setParcelasEdit([]); setStep(0); setTemOutroCorretor(false); } }}>
           <DialogTrigger asChild>
             <Button><Plus className="mr-2 h-4 w-4" />Novo contrato</Button>
           </DialogTrigger>
@@ -805,20 +808,38 @@ export default function Vendas() {
                 </div>
               </div>
               <div className="space-y-2 sm:col-span-2">
-                <Label>Segundo corretor (venda compartilhada)</Label>
-                <div className="flex gap-2">
-                  <Select value={form.corretor2_id} onValueChange={(v) => { set("corretor2_id", v); if (v !== NONE && Number(form.corretor2_part) === 0) { set("corretor1_part", "50"); set("corretor2_part", "50"); } }}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent className="max-h-60">
-                      <SelectItem value={NONE}>Nenhum</SelectItem>
-                      {corretores.filter((c) => c.id !== form.corretor1_id).map((c) => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                  {form.corretor2_id !== NONE && (
-                    <Input className="w-28" type="number" value={form.corretor2_part} onChange={(e) => set("corretor2_part", e.target.value)} placeholder="% part." />
-                  )}
-                </div>
+                <Label>Houve outro corretor na venda?</Label>
+                <Select
+                  value={form.corretor2_id !== NONE || temOutroCorretor ? "sim" : "nao"}
+                  onValueChange={(v) => {
+                    setTemOutroCorretor(v === "sim");
+                    if (v === "nao") { set("corretor2_id", NONE); set("corretor1_part", "100"); set("corretor2_part", "0"); }
+                    else if (Number(form.corretor2_part) === 0) { set("corretor1_part", "50"); set("corretor2_part", "50"); }
+                  }}
+                >
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="nao">Não</SelectItem>
+                    <SelectItem value="sim">Sim</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
+              {(form.corretor2_id !== NONE || temOutroCorretor) && (
+                <div className="space-y-2 sm:col-span-2">
+                  <Label>Qual outro corretor? *</Label>
+                  <div className="flex gap-2">
+                    <Select value={form.corretor2_id} onValueChange={(v) => { set("corretor2_id", v); if (v !== NONE && Number(form.corretor2_part) === 0) { set("corretor1_part", "50"); set("corretor2_part", "50"); } }}>
+                      <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                      <SelectContent className="max-h-60">
+                        {corretores.filter((c) => c.id !== form.corretor1_id).map((c) => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                    {form.corretor2_id !== NONE && (
+                      <Input className="w-28" type="number" value={form.corretor2_part} onChange={(e) => set("corretor2_part", e.target.value)} placeholder="% part." />
+                    )}
+                  </div>
+                </div>
+              )}
               {isPronto ? (
                 <div className="rounded-md border p-3 text-sm sm:col-span-2">
                   <p className="font-medium">Agenciamento</p>
