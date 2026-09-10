@@ -98,7 +98,6 @@ type FormState = {
   parceria_nome: string;
   unidade: string;
   empreendimento_id: string;
-  parceiro_id: string;
   valor: string;
   data_venda: string;
   comissao_percentual_bruta: string;
@@ -123,7 +122,6 @@ const emptyForm = (): FormState => ({
   parceria_nome: "",
   unidade: "",
   empreendimento_id: NONE,
-  parceiro_id: NONE,
   valor: "",
   data_venda: new Date().toISOString().split("T")[0],
   comissao_percentual_bruta: "6",
@@ -172,7 +170,7 @@ export default function Vendas() {
         if (form.agenciador_tipo === "corretor" && form.captador_corretor_id === NONE)
           return erro("Selecione o colega que agenciou o imóvel.");
       } else {
-        if (form.parceiro_id === NONE) return erro("Empreendimento exige a construtora (parceiro).");
+        if (!form.vendedor_nome.trim()) return erro("Informe o nome da construtora (vendedor).");
       }
       if (!form.corretor1_id) return erro("Selecione o corretor responsável.");
       if (temOutroCorretor && form.corretor2_id === NONE) return erro("Selecione qual foi o outro corretor da venda.");
@@ -229,7 +227,7 @@ export default function Vendas() {
       const { data, error } = await supabase
         .from("vendas")
         .select(
-          "*, empreendimentos(nome), parceiros(nome), venda_corretores(id, corretor_id, percentual_corretor, participacao_percentual, corretores(nome)), comissoes(valor_total, valor_corretores, valor_empresa, status)"
+          "*, empreendimentos(nome), venda_corretores(id, corretor_id, percentual_corretor, participacao_percentual, corretores(nome)), comissoes(valor_total, valor_corretores, valor_empresa, status)"
         )
         .order("data_venda", { ascending: false });
       if (error) throw error;
@@ -253,13 +251,6 @@ export default function Vendas() {
     },
   });
 
-  const { data: parceiros = [] } = useQuery({
-    queryKey: ["parceiros-ativos"],
-    queryFn: async () => {
-      const { data } = await supabase.from("parceiros").select("id, nome, tipo").eq("ativo", true).order("nome");
-      return data ?? [];
-    },
-  });
 
   const { data: parcelas = [] } = useQuery({
     queryKey: ["venda-parcelas", parcelasVenda?.id],
@@ -276,8 +267,7 @@ export default function Vendas() {
 
   const empSelecionado = (empreendimentos as any[]).find((e) => e.id === form.empreendimento_id);
   const isPronto = empSelecionado?.tipo === "pronto";
-  const parceiroNome = parceiros.find((p) => p.id === form.parceiro_id)?.nome ?? "";
-  const vendedorFinal = isPronto ? form.vendedor_nome : parceiroNome;
+  const vendedorFinal = form.vendedor_nome;
   const pctBruta = Number(form.comissao_percentual_bruta) || 0;
   const comissaoBruta = (Number(form.valor) || 0) * pctBruta / 100;
   const descontoAgenciador = !isPronto
@@ -297,8 +287,8 @@ export default function Vendas() {
       if (isPronto) {
         if (form.agenciador_tipo === "corretor" && form.captador_corretor_id === NONE)
           throw new Error("Selecione o colega que agenciou o imóvel.");
-      } else if (form.empreendimento_id !== NONE && form.parceiro_id === NONE) {
-        throw new Error("Venda de empreendimento exige a construtora (parceiro).");
+      } else if (form.empreendimento_id !== NONE && !form.vendedor_nome.trim()) {
+        throw new Error("Venda de empreendimento exige o nome da construtora (vendedor).");
       }
       const p1 = Number(form.corretor1_part) || 0;
       const p2 = form.corretor2_id !== NONE ? Number(form.corretor2_part) || 0 : 0;
@@ -316,7 +306,7 @@ export default function Vendas() {
         parceria_nome: form.tem_parceria === "sim" ? form.parceria_nome.trim() || null : null,
         unidade: form.unidade,
         empreendimento_id: form.empreendimento_id === NONE ? null : form.empreendimento_id,
-        parceiro_id: form.parceiro_id === NONE ? null : form.parceiro_id,
+        parceiro_id: null,
         valor: Number(form.valor),
         data_venda: form.data_venda,
         comissao_percentual_bruta:
@@ -441,7 +431,6 @@ export default function Vendas() {
       parceria_nome: v.parceria_nome ?? "",
       unidade: v.unidade ?? "",
       empreendimento_id: v.empreendimento_id ?? NONE,
-      parceiro_id: v.parceiro_id ?? NONE,
       valor: String(v.valor ?? ""),
       data_venda: v.data_venda ?? "",
       comissao_percentual_bruta: String(v.comissao_percentual_bruta ?? 6),
@@ -576,31 +565,18 @@ export default function Vendas() {
                 <Input value={form.cliente_nome} onChange={(e) => set("cliente_nome", e.target.value)} placeholder="Quem está comprando" />
               </div>
               <div className="space-y-2">
-                <Label>Cliente vendedor (proprietário) {isPronto ? "*" : ""}</Label>
-                {isPronto ? (
-                  <Input value={form.vendedor_nome} onChange={(e) => set("vendedor_nome", e.target.value)} placeholder="Dono do imóvel" />
-                ) : (
-                  <Input value={parceiroNome} disabled placeholder="Preenchido com a construtora" />
-                )}
+                <Label>{isPronto ? "Cliente vendedor (proprietário) *" : "Construtora (cliente vendedor) *"}</Label>
+                <Input
+                  value={form.vendedor_nome}
+                  onChange={(e) => set("vendedor_nome", e.target.value)}
+                  placeholder={isPronto ? "Dono do imóvel" : "Nome da construtora"}
+                />
                 <p className="text-xs text-muted-foreground">
                   {isPronto
                     ? "Imóvel pronto: informe o proprietário que está vendendo."
-                    : "Empreendimento: o vendedor é a construtora selecionada."}
+                    : "Empreendimento: o vendedor é a construtora."}
                 </p>
               </div>
-              {!isPronto && (
-                <div className="space-y-2">
-                  <Label>Construtora / imobiliária {form.empreendimento_id !== NONE ? "*" : ""}</Label>
-                  <Select value={form.parceiro_id} onValueChange={(v) => set("parceiro_id", v)}>
-                    <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value={NONE}>Sem parceiro</SelectItem>
-                      {parceiros.map((p) => <SelectItem key={p.id} value={p.id}>{p.nome}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                  <p className="text-xs text-muted-foreground">Venda de empreendimento exige a construtora.</p>
-                </div>
-              )}
               {isPronto && (
                 <>
                   <div className="space-y-2">
@@ -956,7 +932,7 @@ export default function Vendas() {
                 <TableHead>Contrato</TableHead>
                 <TableHead>Comprador / Vendedor</TableHead>
                 <TableHead>Tipo de imóvel</TableHead>
-                <TableHead>Parceiro</TableHead>
+                <TableHead>Parceria</TableHead>
                 <TableHead>Corretores</TableHead>
                 <TableHead>Valor</TableHead>
                 <TableHead>Pagamento</TableHead>
@@ -972,11 +948,11 @@ export default function Vendas() {
                   <TableCell>
                     <div className="font-medium">{v.cliente_nome}</div>
                     <div className="text-xs text-muted-foreground">
-                      Vendedor: {v.vendedor_nome ?? v.parceiros?.nome ?? "—"} · Un. {v.unidade}
+                      Vendedor: {v.vendedor_nome ?? "—"} · Un. {v.unidade}
                     </div>
                   </TableCell>
                   <TableCell>{v.empreendimentos?.nome ?? "—"}</TableCell>
-                  <TableCell>{v.parceiros?.nome ?? "—"}</TableCell>
+                  <TableCell>{v.tem_parceria ? v.parceria_nome ?? "—" : "—"}</TableCell>
                   <TableCell className="text-sm">
                     {(v.venda_corretores ?? []).map((p: any) => (
                       <div key={p.id} className="whitespace-nowrap">
