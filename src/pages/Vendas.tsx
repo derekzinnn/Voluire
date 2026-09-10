@@ -84,10 +84,11 @@ const statusColors: Record<string, string> = {
 };
 
 const STEPS = [
-  { title: "Contrato", desc: "Etapa 1 de 4 — identificação do contrato, cliente e imóvel." },
-  { title: "Valores", desc: "Etapa 2 de 4 — valor da venda e comissão bruta." },
-  { title: "Pagamento", desc: "Etapa 3 de 4 — forma de pagamento e cronograma de recebimento." },
-  { title: "Equipe", desc: "Etapa 4 de 4 — corretores, captador e conferência final." },
+  { title: "Contrato", desc: "Etapa 1 de 5 — identificação do contrato e do imóvel." },
+  { title: "Informações", desc: "Etapa 2 de 5 — comprador, vendedor e agenciamento." },
+  { title: "Valores", desc: "Etapa 3 de 5 — valor da venda e comissão bruta." },
+  { title: "Pagamento", desc: "Etapa 4 de 5 — forma de pagamento e cronograma de recebimento." },
+  { title: "Equipe", desc: "Etapa 5 de 5 — corretores, captador e conferência final." },
 ];
 
 type FormState = {
