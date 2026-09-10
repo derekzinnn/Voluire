@@ -328,20 +328,9 @@ export default function Vendas() {
         vendaId = data.id;
       }
 
-      const pct = (id: string) => Number(corretores.find((c) => c.id === id)?.comissao_percentual) || 50;
-      let part1: number, part2: number;
-      if (isPronto) {
-        part1 = form.corretor2_id !== NONE ? p1 : 100;
-        part2 = p2;
-      } else {
-        if (form.corretor2_id !== NONE) {
-          part1 = pct(form.corretor1_id) / 2;
-          part2 = pct(form.corretor2_id) / 2;
-        } else {
-          part1 = pct(form.corretor1_id);
-          part2 = 0;
-        }
-      }
+      const pct = pctFicha;
+      const part1 = participacaoDe(form.corretor1_id);
+      const part2 = form.corretor2_id !== NONE ? participacaoDe(form.corretor2_id) : 0;
       const rows = [
         { venda_id: vendaId!, corretor_id: form.corretor1_id, participacao_percentual: part1, percentual_corretor: pct(form.corretor1_id) },
       ];
