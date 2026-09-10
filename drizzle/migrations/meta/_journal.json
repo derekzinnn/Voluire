@@ -22,6 +22,13 @@
       "when": 1789063398522,
       "tag": "0002_add_parceria_venda",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1789063568467,
+      "tag": "0003_add_administrativo_role",
+      "breakpoints": true
     }
   ]
 }
