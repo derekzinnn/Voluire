@@ -806,15 +806,9 @@ export default function Vendas() {
                       {corretores.map((c) => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}
                     </SelectContent>
                   </Select>
-                  {isPronto ? (
-                    form.corretor2_id !== NONE && (
-                      <Input className="w-28" type="number" min="0" max="100" step="0.1" value={form.corretor1_part} onChange={(e) => set("corretor1_part", e.target.value)} placeholder="% part." />
-                    )
-                  ) : (
+                  {form.corretor1_id && (
                     <div className="flex w-28 items-center justify-center rounded-md border bg-muted px-2 text-sm">
-                      {form.corretor2_id !== NONE
-                        ? ((Number(corretores.find((c) => c.id === form.corretor1_id)?.comissao_percentual) || 50) / 2).toFixed(1).replace(".0", "")
-                        : (Number(corretores.find((c) => c.id === form.corretor1_id)?.comissao_percentual) || 50).toFixed(1).replace(".0", "")}%
+                      {fmtPct(participacaoDe(form.corretor1_id))}%
                     </div>
                   )}
                 </div>
