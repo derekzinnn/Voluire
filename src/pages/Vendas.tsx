@@ -84,10 +84,11 @@ const statusColors: Record<string, string> = {
 };
 
 const STEPS = [
-  { title: "Contrato", desc: "Etapa 1 de 4 — identificação do contrato, cliente e imóvel." },
-  { title: "Valores", desc: "Etapa 2 de 4 — valor da venda e comissão bruta." },
-  { title: "Pagamento", desc: "Etapa 3 de 4 — forma de pagamento e cronograma de recebimento." },
-  { title: "Equipe", desc: "Etapa 4 de 4 — corretores, captador e conferência final." },
+  { title: "Contrato", desc: "Etapa 1 de 5 — identificação do contrato e do imóvel." },
+  { title: "Informações", desc: "Etapa 2 de 5 — comprador, vendedor e agenciamento." },
+  { title: "Valores", desc: "Etapa 3 de 5 — valor da venda e comissão bruta." },
+  { title: "Pagamento", desc: "Etapa 4 de 5 — forma de pagamento e cronograma de recebimento." },
+  { title: "Equipe", desc: "Etapa 5 de 5 — corretores, captador e conferência final." },
 ];
 
 type FormState = {
@@ -161,23 +162,25 @@ export default function Vendas() {
     if (step === 0) {
       if (!form.numero_contrato.trim()) return erro("Informe o número do contrato.");
       if (!form.data_venda) return erro("Informe a data da venda.");
+      if (!form.unidade.trim()) return erro("Informe a unidade.");
+      if (!isPronto && form.empreendimento_id === NONE) return erro("Selecione o tipo de imóvel.");
+    }
+    if (step === 1) {
       if (!form.cliente_nome.trim()) return erro("Informe o cliente comprador.");
       if (isPronto && !form.vendedor_nome.trim()) return erro("Informe o cliente vendedor (proprietário).");
-      if (!form.unidade.trim()) return erro("Informe a unidade.");
       if (isPronto) {
         if (form.agenciador_tipo === "corretor" && form.captador_corretor_id === NONE)
           return erro("Selecione o colega que agenciou o imóvel.");
       } else {
-        if (form.empreendimento_id === NONE) return erro("Selecione o empreendimento.");
         if (form.parceiro_id === NONE) return erro("Empreendimento exige a construtora (parceiro).");
       }
     }
-    if (step === 1) {
+    if (step === 2) {
       if (!(Number(form.valor) > 0)) return erro("Informe o valor da venda.");
       if (!(Number(form.comissao_percentual_bruta) > 0)) return erro("Informe a comissão bruta (%).");
       if (form.tem_parceria === "sim" && !form.parceria_nome.trim()) return erro("Informe o nome do parceiro.");
     }
-    if (step === 2) {
+    if (step === 3) {
       if (form.forma_pagamento === "a_vista") {
         if (!form.primeira_parcela) return erro("Informe a data prevista de recebimento.");
       } else {
@@ -520,6 +523,12 @@ export default function Vendas() {
                 <Label>Unidade *</Label>
                 <Input value={form.unidade} onChange={(e) => set("unidade", e.target.value)} />
               </div>
+            </div>
+            )}
+
+            {/* Etapa 2 — Informações */}
+            {step === 1 && (
+            <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label>Cliente comprador *</Label>
                 <Input value={form.cliente_nome} onChange={(e) => set("cliente_nome", e.target.value)} placeholder="Quem está comprando" />
@@ -594,8 +603,8 @@ export default function Vendas() {
             </div>
             )}
 
-            {/* Etapa 2 — Valores */}
-            {step === 1 && (
+            {/* Etapa 3 — Valores */}
+            {step === 2 && (
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label>Valor da venda (R$) *</Label>
@@ -671,8 +680,8 @@ export default function Vendas() {
             </div>
             )}
 
-            {/* Etapa 3 — Pagamento */}
-            {step === 2 && (
+            {/* Etapa 4 — Pagamento */}
+            {step === 3 && (
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label>Forma de pagamento</Label>
@@ -778,8 +787,8 @@ export default function Vendas() {
             </div>
             )}
 
-            {/* Etapa 4 — Equipe */}
-            {step === 3 && (
+            {/* Etapa 5 — Equipe */}
+            {step === 4 && (
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2 sm:col-span-2">
                 <Label>Corretor responsável *</Label>
