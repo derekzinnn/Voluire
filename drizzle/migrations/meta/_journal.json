@@ -43,6 +43,13 @@
       "when": 1789065246636,
       "tag": "0005_ajustar_participacao_corretores",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1789067260754,
+      "tag": "0006_agenciador_antes_da_divisao",
+      "breakpoints": true
     }
   ]
 }
