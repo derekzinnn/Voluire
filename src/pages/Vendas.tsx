@@ -345,12 +345,24 @@ export default function Vendas() {
       }
 
       const pct = (id: string) => Number(corretores.find((c) => c.id === id)?.comissao_percentual) || 50;
-      const part1 = isPronto ? (form.corretor2_id !== NONE ? p1 : 100) : (form.corretor2_id !== NONE ? p1 : 50);
+      let part1: number, part2: number;
+      if (isPronto) {
+        part1 = form.corretor2_id !== NONE ? p1 : 100;
+        part2 = p2;
+      } else {
+        if (form.corretor2_id !== NONE) {
+          part1 = pct(form.corretor1_id) / 2;
+          part2 = pct(form.corretor2_id) / 2;
+        } else {
+          part1 = pct(form.corretor1_id);
+          part2 = 0;
+        }
+      }
       const rows = [
         { venda_id: vendaId!, corretor_id: form.corretor1_id, participacao_percentual: part1, percentual_corretor: pct(form.corretor1_id) },
       ];
       if (form.corretor2_id !== NONE)
-        rows.push({ venda_id: vendaId!, corretor_id: form.corretor2_id, participacao_percentual: p2, percentual_corretor: pct(form.corretor2_id) });
+        rows.push({ venda_id: vendaId!, corretor_id: form.corretor2_id, participacao_percentual: part2, percentual_corretor: pct(form.corretor2_id) });
       const { error: vcErr } = await supabase.from("venda_corretores").insert(rows);
       if (vcErr) throw vcErr;
 
