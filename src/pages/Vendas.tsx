@@ -162,23 +162,25 @@ export default function Vendas() {
     if (step === 0) {
       if (!form.numero_contrato.trim()) return erro("Informe o número do contrato.");
       if (!form.data_venda) return erro("Informe a data da venda.");
+      if (!form.unidade.trim()) return erro("Informe a unidade.");
+      if (!isPronto && form.empreendimento_id === NONE) return erro("Selecione o tipo de imóvel.");
+    }
+    if (step === 1) {
       if (!form.cliente_nome.trim()) return erro("Informe o cliente comprador.");
       if (isPronto && !form.vendedor_nome.trim()) return erro("Informe o cliente vendedor (proprietário).");
-      if (!form.unidade.trim()) return erro("Informe a unidade.");
       if (isPronto) {
         if (form.agenciador_tipo === "corretor" && form.captador_corretor_id === NONE)
           return erro("Selecione o colega que agenciou o imóvel.");
       } else {
-        if (form.empreendimento_id === NONE) return erro("Selecione o empreendimento.");
         if (form.parceiro_id === NONE) return erro("Empreendimento exige a construtora (parceiro).");
       }
     }
-    if (step === 1) {
+    if (step === 2) {
       if (!(Number(form.valor) > 0)) return erro("Informe o valor da venda.");
       if (!(Number(form.comissao_percentual_bruta) > 0)) return erro("Informe a comissão bruta (%).");
       if (form.tem_parceria === "sim" && !form.parceria_nome.trim()) return erro("Informe o nome do parceiro.");
     }
-    if (step === 2) {
+    if (step === 3) {
       if (form.forma_pagamento === "a_vista") {
         if (!form.primeira_parcela) return erro("Informe a data prevista de recebimento.");
       } else {
