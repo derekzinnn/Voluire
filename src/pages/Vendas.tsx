@@ -227,7 +227,7 @@ export default function Vendas() {
       const { data, error } = await supabase
         .from("vendas")
         .select(
-          "*, empreendimentos(nome), parceiros(nome), venda_corretores(id, corretor_id, percentual_corretor, participacao_percentual, corretores(nome)), comissoes(valor_total, valor_corretores, valor_empresa, status)"
+          "*, empreendimentos(nome), venda_corretores(id, corretor_id, percentual_corretor, participacao_percentual, corretores(nome)), comissoes(valor_total, valor_corretores, valor_empresa, status)"
         )
         .order("data_venda", { ascending: false });
       if (error) throw error;
@@ -948,11 +948,11 @@ export default function Vendas() {
                   <TableCell>
                     <div className="font-medium">{v.cliente_nome}</div>
                     <div className="text-xs text-muted-foreground">
-                      Vendedor: {v.vendedor_nome ?? v.parceiros?.nome ?? "—"} · Un. {v.unidade}
+                      Vendedor: {v.vendedor_nome ?? "—"} · Un. {v.unidade}
                     </div>
                   </TableCell>
                   <TableCell>{v.empreendimentos?.nome ?? "—"}</TableCell>
-                  <TableCell>{v.parceiros?.nome ?? "—"}</TableCell>
+                  <TableCell>{v.tem_parceria ? v.parceria_nome ?? "—" : "—"}</TableCell>
                   <TableCell className="text-sm">
                     {(v.venda_corretores ?? []).map((p: any) => (
                       <div key={p.id} className="whitespace-nowrap">
