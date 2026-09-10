@@ -825,8 +825,7 @@ export default function Vendas() {
                   value={form.corretor2_id !== NONE || temOutroCorretor ? "sim" : "nao"}
                   onValueChange={(v) => {
                     setTemOutroCorretor(v === "sim");
-                    if (v === "nao") { set("corretor2_id", NONE); if (isPronto) { set("corretor1_part", "100"); set("corretor2_part", "0"); } }
-                    else if (isPronto && Number(form.corretor2_part) === 0) { set("corretor1_part", "50"); set("corretor2_part", "50"); }
+                    if (v === "nao") set("corretor2_id", NONE);
                   }}
                 >
                   <SelectTrigger><SelectValue /></SelectTrigger>
