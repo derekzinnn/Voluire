@@ -150,6 +150,8 @@ export default function PerfilTab({ corretorId, perfil, podeGerenciar, isDiretor
       email_pessoal: txt("email_pessoal"),
       creci: txt("creci"),
     });
+    const novoEmail = txt("email_cadastro");
+    if ((novoEmail ?? "") !== (corretor?.email ?? "")) salvarCorretor.mutate(novoEmail);
     // CPF vive em tabela protegida; só a diretoria enxerga e grava o valor real.
     if (isDiretor) {
       const novoCpf = ((fd.get("cpf") as string) ?? "").trim();
@@ -185,6 +187,22 @@ export default function PerfilTab({ corretorId, perfil, podeGerenciar, isDiretor
                     e.target.value = formatPhone(e.target.value);
                   }}
                 />
+              </div>
+              <div className="space-y-2">
+                <Label>E-mail de cadastro</Label>
+                <Input
+                  type="email"
+                  name="email_cadastro"
+                  key={corretor?.email ?? "email"}
+                  defaultValue={corretor?.email ?? ""}
+                  disabled={readOnly}
+                  placeholder="corretor@voluire.com"
+                />
+                {corretor?.user_id && (
+                  <p className="text-xs text-muted-foreground">
+                    Alterar aqui não muda o e-mail de acesso ao sistema.
+                  </p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label>E-mail pessoal</Label>
