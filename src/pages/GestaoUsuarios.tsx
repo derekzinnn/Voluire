@@ -275,6 +275,28 @@ export default function GestaoUsuarios() {
       <TabsContent value="cargos">
         <CargosPermissoesManager />
       </TabsContent>
+
+      <AlertDialog open={!!usuarioParaExcluir} onOpenChange={(open) => !open && setUsuarioParaExcluir(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir usuário?</AlertDialogTitle>
+            <AlertDialogDescription>
+              O acesso de <strong>{usuarioParaExcluir?.email}</strong> será excluído permanentemente.
+              Se houver um corretor vinculado, ele será desvinculado (a ficha do corretor não é apagada).
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={excluirMutation.isPending}
+              onClick={() => usuarioParaExcluir && excluirMutation.mutate(usuarioParaExcluir.id)}
+            >
+              {excluirMutation.isPending ? "Excluindo..." : "Excluir"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Tabs>
   );
 }
