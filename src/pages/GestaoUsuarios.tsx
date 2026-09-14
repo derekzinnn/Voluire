@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,11 +7,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { UserCheck, Shield, Link2, Unlink } from "lucide-react";
+import { UserCheck, Shield, Link2, Unlink, Trash2 } from "lucide-react";
 import { ROLE_LABELS, ROLES_CONFIGURAVEIS, useUserRole, type AppRole } from "@/hooks/useUserRole";
 import DefinirSenhaDialog from "@/components/DefinirSenhaDialog";
 import CargosPermissoesManager from "@/components/CargosPermissoesManager";
 import EquipesManager from "@/components/EquipesManager";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 import VincularUsuarioDialog from "@/components/VincularUsuarioDialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -27,6 +29,7 @@ export default function GestaoUsuarios() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { isDiretor } = useUserRole();
+  const [usuarioParaExcluir, setUsuarioParaExcluir] = useState<{ id: string; email: string } | null>(null);
 
 
   // Fetch users via secure RPC function
