@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -241,9 +241,8 @@ export default function Logs() {
                 const expandivel = !!l.detalhes;
                 const expandido = aberto === l.id;
                 return (
-                  <>
+                  <Fragment key={l.id}>
                     <TableRow
-                      key={l.id}
                       className={expandivel ? "cursor-pointer" : undefined}
                       onClick={() => expandivel && setAberto(expandido ? null : l.id)}
                     >
@@ -263,14 +262,14 @@ export default function Logs() {
                       <TableCell className="text-sm text-muted-foreground">{l.descricao ?? "—"}</TableCell>
                     </TableRow>
                     {expandido && (
-                      <TableRow key={`${l.id}-det`} className="bg-muted/30 hover:bg-muted/30">
+                      <TableRow className="bg-muted/30 hover:bg-muted/30">
                         <TableCell />
                         <TableCell colSpan={5}>
                           <DetalheLog log={l} />
                         </TableCell>
                       </TableRow>
                     )}
-                  </>
+                  </Fragment>
                 );
               })}
               {!isLoading && visiveis.length === 0 && (
