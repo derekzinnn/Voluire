@@ -25,8 +25,10 @@ export default function VincularUsuarioDialog({ triggerLabel = "Vincular usuári
   const [email, setEmail] = useState("");
   const [role, setRole] = useState("corretor");
   const [equipeId, setEquipeId] = useState(SEM_EQUIPE);
-  const [resultado, setResultado] = useState<{ email: string; password: string } | null>(null);
+  const [resultado, setResultado] = useState<{ email: string; password: string; userId: string } | null>(null);
   const [copiado, setCopiado] = useState(false);
+  const [enviandoLink, setEnviandoLink] = useState(false);
+  const [linkEnviado, setLinkEnviado] = useState(false);
 
   const { data: corretores = [] } = useQuery({
     queryKey: ["corretores-sem-login"],
@@ -66,6 +68,8 @@ export default function VincularUsuarioDialog({ triggerLabel = "Vincular usuári
 
   const reset = () => {
     setResultado(null);
+    setLinkEnviado(false);
+    setEnviandoLink(false);
     setCorretorId("");
     setEmail("");
     setRole("corretor");
@@ -94,7 +98,7 @@ export default function VincularUsuarioDialog({ triggerLabel = "Vincular usuári
       ["corretores", "corretores-sem-login", "list-users", "user-roles", "equipes"].forEach((k) =>
         queryClient.invalidateQueries({ queryKey: [k] })
       );
-      setResultado({ email, password: data.tempPassword });
+      setResultado({ email, password: data.tempPassword, userId: data.userId });
       toast({ title: "Acesso criado e vinculado!" });
     },
     onError: (e: any) => toast({ title: "Nada foi vinculado", description: e.message, variant: "destructive" }),
