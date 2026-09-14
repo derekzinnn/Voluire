@@ -64,6 +64,13 @@
       "when": 1789390574727,
       "tag": "0008_create_system_logs",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1789390889293,
+      "tag": "0009_logs_detalhados",
+      "breakpoints": true
     }
   ]
 }
