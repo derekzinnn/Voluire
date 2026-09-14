@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Check, Copy, KeyRound, Link2 } from "lucide-react";
+import { Check, Copy, KeyRound, Link2, Mail } from "lucide-react";
 
 const SEM_EQUIPE = "__sem_equipe__";
 const SEM_FICHA = "__sem_ficha__";
@@ -111,6 +111,23 @@ export default function VincularUsuarioDialog({ triggerLabel = "Vincular usuári
     setTimeout(() => setCopiado(false), 2000);
   };
 
+  const enviarLinkSenha = async () => {
+    if (!resultado) return;
+    setEnviandoLink(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(resultado.email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (error) throw error;
+      setLinkEnviado(true);
+      toast({ title: "Link enviado!", description: `${resultado.email} vai receber o e-mail para cadastrar a senha.` });
+    } catch (e: any) {
+      toast({ title: "Não foi possível enviar", description: e.message, variant: "destructive" });
+    } finally {
+      setEnviandoLink(false);
+    }
+  };
+
   const podeSalvar = !!corretorId && !!email.trim();
 
   return (
@@ -134,20 +151,32 @@ export default function VincularUsuarioDialog({ triggerLabel = "Vincular usuári
         {resultado ? (
           <div className="space-y-4">
             <div className="space-y-2 rounded-lg border bg-muted/50 p-4">
-              <p className="text-sm font-medium">Credenciais criadas</p>
-              <p className="text-sm text-muted-foreground">Envie ao usuário. Ele pode trocar a senha em "Esqueci a senha".</p>
-              <div className="mt-3 space-y-1 rounded border bg-background p-3 font-mono text-sm">
+              <p className="text-sm font-medium">Acesso criado para {resultado.email}</p>
+              <p className="text-sm text-muted-foreground">
+                Envie o link abaixo para a pessoa cadastrar a própria senha. Depois disso, só ela e o diretor podem alterá-la.
+              </p>
+              <Button className="mt-2 w-full gap-2" onClick={enviarLinkSenha} disabled={enviandoLink || linkEnviado}>
+                <Mail className="h-4 w-4" />
+                {linkEnviado ? "Link enviado!" : enviandoLink ? "Enviando..." : "Enviar link para cadastrar senha"}
+              </Button>
+            </div>
+
+            <div className="space-y-2 rounded-lg border p-4">
+              <p className="text-sm font-medium">Senha temporária (opcional)</p>
+              <p className="text-sm text-muted-foreground">
+                Use só se a pessoa não tiver acesso ao e-mail agora.
+              </p>
+              <div className="mt-2 space-y-1 rounded border bg-muted/50 p-3 font-mono text-sm">
                 <p><span className="text-muted-foreground">Email:</span> {resultado.email}</p>
                 <p><span className="text-muted-foreground">Senha:</span> {resultado.password}</p>
               </div>
-            </div>
-            <div className="flex gap-2">
-              <Button variant="outline" className="flex-1" onClick={copiar}>
+              <Button variant="outline" className="mt-2 w-full" onClick={copiar}>
                 {copiado ? <Check className="mr-2 h-4 w-4" /> : <Copy className="mr-2 h-4 w-4" />}
                 {copiado ? "Copiado!" : "Copiar credenciais"}
               </Button>
-              <Button className="flex-1" onClick={() => { reset(); setOpen(false); }}>Fechar</Button>
             </div>
+
+            <Button className="w-full" variant="secondary" onClick={() => { reset(); setOpen(false); }}>Fechar</Button>
           </div>
         ) : (
           <form
