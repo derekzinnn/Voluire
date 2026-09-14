@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,11 +7,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { UserCheck, Shield, Link2, Unlink } from "lucide-react";
+import { UserCheck, Shield, Link2, Unlink, Trash2 } from "lucide-react";
 import { ROLE_LABELS, ROLES_CONFIGURAVEIS, useUserRole, type AppRole } from "@/hooks/useUserRole";
 import DefinirSenhaDialog from "@/components/DefinirSenhaDialog";
 import CargosPermissoesManager from "@/components/CargosPermissoesManager";
 import EquipesManager from "@/components/EquipesManager";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 import VincularUsuarioDialog from "@/components/VincularUsuarioDialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -27,6 +29,7 @@ export default function GestaoUsuarios() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { isDiretor } = useUserRole();
+  const [usuarioParaExcluir, setUsuarioParaExcluir] = useState<{ id: string; email: string } | null>(null);
 
 
   // Fetch users via secure RPC function
@@ -80,6 +83,24 @@ export default function GestaoUsuarios() {
       queryClient.invalidateQueries({ queryKey: ["corretores"] });
       toast({ title: "Vínculo removido" });
     },
+  });
+
+  const excluirMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      const { data, error } = await supabase.functions.invoke("admin-delete-user", {
+        body: { user_id: userId },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["list-users"] });
+      queryClient.invalidateQueries({ queryKey: ["user-roles"] });
+      queryClient.invalidateQueries({ queryKey: ["corretores"] });
+      toast({ title: "Usuário excluído!" });
+      setUsuarioParaExcluir(null);
+    },
+    onError: (err: any) => toast({ title: "Erro ao excluir usuário", description: err?.message, variant: "destructive" }),
   });
 
   const roleMutation = useMutation({
@@ -201,6 +222,17 @@ export default function GestaoUsuarios() {
                           </Badge>
                         )}
                         {isDiretor && <DefinirSenhaDialog userId={user.id} email={user.email} />}
+                        {isDiretor && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            title="Excluir usuário"
+                            onClick={() => setUsuarioParaExcluir({ id: user.id, email: user.email })}
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -243,6 +275,28 @@ export default function GestaoUsuarios() {
       <TabsContent value="cargos">
         <CargosPermissoesManager />
       </TabsContent>
+
+      <AlertDialog open={!!usuarioParaExcluir} onOpenChange={(open) => !open && setUsuarioParaExcluir(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir usuário?</AlertDialogTitle>
+            <AlertDialogDescription>
+              O acesso de <strong>{usuarioParaExcluir?.email}</strong> será excluído permanentemente.
+              Se houver um corretor vinculado, ele será desvinculado (a ficha do corretor não é apagada).
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={excluirMutation.isPending}
+              onClick={() => usuarioParaExcluir && excluirMutation.mutate(usuarioParaExcluir.id)}
+            >
+              {excluirMutation.isPending ? "Excluindo..." : "Excluir"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Tabs>
   );
 }
