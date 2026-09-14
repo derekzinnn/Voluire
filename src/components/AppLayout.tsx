@@ -20,7 +20,7 @@ const navItems = [
   
   { to: "/empreendimentos", icon: Building, label: "Empreendimentos" },
   { to: "/financeiro", icon: Wallet, label: "Financeiro" },
-  { to: "/minha-equipe", icon: UsersRound, label: "Minha Equipe", group: "Gestão" },
+  
   { to: "/gestao-usuarios", icon: Settings, label: "Gestão Usuários", group: "Gestão" },
 ];
 
