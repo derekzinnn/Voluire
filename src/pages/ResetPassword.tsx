@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import logo from "@/assets/logo.jpg";
+import { registrarLog } from "@/lib/logs";
 
 export default function ResetPassword() {
   const [password, setPassword] = useState("");
@@ -38,6 +39,7 @@ export default function ResetPassword() {
     try {
       const { error } = await supabase.auth.updateUser({ password });
       if (error) throw error;
+      await registrarLog("cadastrou a senha", { descricao: "Senha definida pelo link de acesso" });
       toast({ title: "Senha atualizada!", description: "Sua senha foi redefinida com sucesso." });
       navigate("/");
     } catch (error: any) {

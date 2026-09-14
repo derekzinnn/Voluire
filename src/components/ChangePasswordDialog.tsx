@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { KeyRound } from "lucide-react";
+import { registrarLog } from "@/lib/logs";
 
 export default function ChangePasswordDialog() {
   const [open, setOpen] = useState(false);
@@ -35,6 +36,7 @@ export default function ChangePasswordDialog() {
     try {
       const { error } = await supabase.auth.updateUser({ password });
       if (error) throw error;
+      await registrarLog("trocou a senha", { descricao: "Troca de senha pelo próprio usuário" });
       toast({ title: "Senha alterada!", description: "Sua senha foi atualizada com sucesso." });
       setPassword("");
       setConfirmPassword("");

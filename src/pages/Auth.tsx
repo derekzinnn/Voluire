@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useToast } from "@/hooks/use-toast";
 import logo from "@/assets/logo.jpg";
 import { Eye, EyeOff } from "lucide-react";
+import { registrarLog } from "@/lib/logs";
 
 export default function Auth() {
   const [email, setEmail] = useState("");
@@ -29,6 +30,7 @@ export default function Auth() {
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
+        await registrarLog("entrou no sistema", { descricao: "Login com e-mail e senha" });
       }
     } catch (error: any) {
       toast({ title: "Erro", description: error.message, variant: "destructive" });

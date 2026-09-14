@@ -36,6 +36,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
 
   const handleLogout = async () => {
+    await registrarLog("saiu do sistema", { descricao: "Logout" });
     await supabase.auth.signOut();
   };
 
