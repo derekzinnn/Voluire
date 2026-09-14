@@ -57,6 +57,13 @@
       "when": 1789389731271,
       "tag": "0007_restringir_leituras_e_execucao_funcoes",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1789390574727,
+      "tag": "0008_create_system_logs",
+      "breakpoints": true
     }
   ]
 }
