@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
@@ -150,6 +151,7 @@ export default function Vendas() {
   const [parcelasEdit, setParcelasEdit] = useState<{ valor: string; data_prevista: string }[]>([]);
   const [step, setStep] = useState(0);
   const [temOutroCorretor, setTemOutroCorretor] = useState(false);
+  const [vendaParaExcluir, setVendaParaExcluir] = useState<string | null>(null);
   const set = (k: keyof FormState, v: string) => setForm((f) => ({ ...f, [k]: v }));
 
   function avancar() {
@@ -947,7 +949,7 @@ export default function Vendas() {
                     {isGestor && (
                       <>
                         <Button variant="ghost" size="icon" onClick={() => abrirEdicao(v)}><Pencil className="h-4 w-4" /></Button>
-                        <Button variant="ghost" size="icon" onClick={() => { if (confirm("Excluir este contrato?")) excluir.mutate(v.id); }}>
+                        <Button variant="ghost" size="icon" onClick={() => setVendaParaExcluir(v.id)}>
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
                       </>
@@ -1033,6 +1035,29 @@ export default function Vendas() {
           </Table>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!vendaParaExcluir} onOpenChange={(o) => !o && setVendaParaExcluir(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir contrato?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Essa ação não pode ser desfeita. O contrato e seus dados serão removidos permanentemente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setVendaParaExcluir(null)}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (vendaParaExcluir) excluir.mutate(vendaParaExcluir);
+                setVendaParaExcluir(null);
+              }}
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
