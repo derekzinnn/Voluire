@@ -7,7 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { UserCheck, Shield, Link2, Unlink } from "lucide-react";
-import { ROLE_LABELS, ROLES_CONFIGURAVEIS, type AppRole } from "@/hooks/useUserRole";
+import { ROLE_LABELS, ROLES_CONFIGURAVEIS, useUserRole, type AppRole } from "@/hooks/useUserRole";
+import DefinirSenhaDialog from "@/components/DefinirSenhaDialog";
 import CargosPermissoesManager from "@/components/CargosPermissoesManager";
 import EquipesManager from "@/components/EquipesManager";
 
@@ -25,6 +26,7 @@ const ROLE_COLORS: Record<string, string> = {
 export default function GestaoUsuarios() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { isDiretor } = useUserRole();
 
 
   // Fetch users via secure RPC function
@@ -192,11 +194,14 @@ export default function GestaoUsuarios() {
                       )}
                     </TableCell>
                     <TableCell>
-                      {linkedCorretor && (
-                        <Badge variant="outline" className="gap-1">
-                          <Link2 className="h-3 w-3" />Vinculado
-                        </Badge>
-                      )}
+                      <div className="flex items-center gap-2">
+                        {linkedCorretor && (
+                          <Badge variant="outline" className="gap-1">
+                            <Link2 className="h-3 w-3" />Vinculado
+                          </Badge>
+                        )}
+                        {isDiretor && <DefinirSenhaDialog userId={user.id} email={user.email} />}
+                      </div>
                     </TableCell>
                   </TableRow>
                 );

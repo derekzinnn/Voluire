@@ -142,6 +142,7 @@ export function canAccessPage(role: AppRole | null, page: string, permissions: s
   if (page === "/empreendimentos") return role === "gerente" || has("empreendimentos.gerenciar");
   if (page === "/minha-equipe") return role === "gerente";
   if (page === "/gestao-usuarios") return has("usuarios.gerenciar");
+  if (page === "/logs") return false; // histórico do sistema: só diretor
 
   return false;
 }

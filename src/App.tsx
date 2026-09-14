@@ -15,6 +15,7 @@ import CorretorDetalhe from "@/pages/CorretorDetalhe";
 import Financeiro from "@/pages/Financeiro";
 import GestaoUsuarios from "@/pages/GestaoUsuarios";
 import MinhaEquipe from "@/pages/MinhaEquipe";
+import Logs from "@/pages/Logs";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -50,6 +51,7 @@ function AppRoutes() {
         <Route path="/financeiro" element={<Financeiro />} />
         <Route path="/minha-equipe" element={<MinhaEquipe />} />
         <Route path="/gestao-usuarios" element={<GestaoUsuarios />} />
+        <Route path="/logs" element={<Logs />} />
 
         <Route path="*" element={<NotFound />} />
       </Routes>
