@@ -85,6 +85,24 @@ export default function GestaoUsuarios() {
     },
   });
 
+  const excluirMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      const { data, error } = await supabase.functions.invoke("admin-delete-user", {
+        body: { user_id: userId },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["list-users"] });
+      queryClient.invalidateQueries({ queryKey: ["user-roles"] });
+      queryClient.invalidateQueries({ queryKey: ["corretores"] });
+      toast({ title: "Usuário excluído!" });
+      setUsuarioParaExcluir(null);
+    },
+    onError: (err: any) => toast({ title: "Erro ao excluir usuário", description: err?.message, variant: "destructive" }),
+  });
+
   const roleMutation = useMutation({
     mutationFn: async ({ userId, newRole }: { userId: string; newRole: AppRole }) => {
       await supabase.from("user_roles").delete().eq("user_id", userId);
@@ -204,6 +222,17 @@ export default function GestaoUsuarios() {
                           </Badge>
                         )}
                         {isDiretor && <DefinirSenhaDialog userId={user.id} email={user.email} />}
+                        {isDiretor && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            title="Excluir usuário"
+                            onClick={() => setUsuarioParaExcluir({ id: user.id, email: user.email })}
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
