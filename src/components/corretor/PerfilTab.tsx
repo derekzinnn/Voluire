@@ -52,6 +52,31 @@ export default function PerfilTab({ corretorId, perfil, podeGerenciar, isDiretor
     onError: (e: any) => toast({ title: "Erro ao salvar CPF", description: e.message, variant: "destructive" }),
   });
 
+  const { data: corretor } = useQuery({
+    queryKey: ["corretor-basico", corretorId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("corretores")
+        .select("id, nome, email, user_id")
+        .eq("id", corretorId)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const salvarCorretor = useMutation({
+    mutationFn: async (valores: Record<string, any>) => {
+      const { error } = await supabase.from("corretores").update(valores).eq("id", corretorId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["corretor-basico", corretorId] });
+      queryClient.invalidateQueries({ queryKey: ["corretores"] });
+    },
+    onError: (e: any) => toast({ title: "Erro ao salvar e-mail", description: e.message, variant: "destructive" }),
+  });
+
   const { data: notas } = useQuery({
     queryKey: ["corretor-notas", corretorId],
     enabled: podeGerenciar,
