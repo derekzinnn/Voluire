@@ -66,8 +66,8 @@ export default function PerfilTab({ corretorId, perfil, podeGerenciar, isDiretor
   });
 
   const salvarCorretor = useMutation({
-    mutationFn: async (valores: Record<string, any>) => {
-      const { error } = await supabase.from("corretores").update(valores).eq("id", corretorId);
+    mutationFn: async (email: string | null) => {
+      const { error } = await supabase.from("corretores").update({ email }).eq("id", corretorId);
       if (error) throw error;
     },
     onSuccess: () => {
