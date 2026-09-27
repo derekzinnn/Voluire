@@ -933,6 +933,25 @@ export type Database = {
           vgv_quitado: number
         }[]
       }
+      fechamento_corretores: {
+        Args: { p_fim: string; p_ini: string }
+        Returns: {
+          a_receber: number
+          corretor_id: string
+          corretor_nome: string
+          quitado: number
+          realizado: number
+        }[]
+      }
+      fechamento_is_gestao: { Args: never; Returns: boolean }
+      fechamento_totais: {
+        Args: { p_fim: string; p_ini: string }
+        Returns: {
+          a_receber: number
+          quitado: number
+          realizado: number
+        }[]
+      }
       get_corretor_cpf: { Args: { p_corretor_id: string }; Returns: string }
       get_my_corretor_id: { Args: never; Returns: string }
       get_my_equipe_ids: { Args: never; Returns: string[] }

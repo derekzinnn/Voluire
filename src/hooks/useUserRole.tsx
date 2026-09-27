@@ -135,6 +135,7 @@ export function canAccessPage(role: AppRole | null, page: string, permissions: s
   if (page.startsWith("/corretores/")) return true;
 
   if (page === "/") return role === "gerente" || role === "corretor" || has("dashboard.ver");
+  if (page === "/fechamento") return role === "gerente" || role === "corretor" || has("dashboard.ver") || has("financeiro.ver");
   if (page === "/vendas") return role === "gerente" || role === "corretor" || has("vendas.ver_todas") || has("vendas.gerenciar");
   if (page === "/corretores") return role === "gerente" || has("corretores.ver_todos") || has("corretores.gerenciar");
   if (page === "/financeiro") return role === "gerente" || has("financeiro.ver") || has("financeiro.gerenciar");

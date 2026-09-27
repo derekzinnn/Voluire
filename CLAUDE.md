@@ -123,3 +123,14 @@
 
 ## Próximo passo — Fase 4
 - Cadastrar metas reais de 2025/2026; aba Fechamento; remover `dashboard_mensal` e `ranking_corretores` (não usadas).
+
+## Fase 4 — Fechamento — CONCLUÍDA
+- Rota `/fechamento`, item logo abaixo de Dashboard. Abas Mensal/Trimestral/Anual + seletor de período (padrão atual, SP), filtro de corretor (visão mês/tri/ano lado a lado), tabela por corretor, CSV (`;`, BOM, vírgula decimal).
+- Funções SECURITY DEFINER (só authenticated): `fechamento_corretores(ini,fim)` e `fechamento_totais(ini,fim)`, sobre `vw_vgv_*`. `fechamento_is_gestao()` = diretor, gerente, `dashboard.ver` ou `financeiro.ver`; demais recebem só a própria linha (`get_my_corretor_id`). Escopo aplicado no banco, não só na tela.
+- Definições: Realizado = VGV com data da venda no período; Quitado = VGV proporcional por data de pagamento no período (fatia do corretor); A receber = saldo no fim do período (realizado até o fim − quitado até o fim), nunca negativo.
+- Totais gerais = mesmas somas do Dashboard (views). Rankings (Realizado/Quitado, mês e ano) só para gestão; empates dividem a posição (1, 1, 3).
+- Checagem 2026: Realizado 1.186.004,30 e Quitado 402.990,00 iguais no Dashboard e na soma por corretor; 0 vendas sem corretor.
+- Arquivos: `drizzle/migrations/0013_fase4_fechamento.sql`, `src/pages/Fechamento.tsx`, `src/App.tsx`, `src/components/AppLayout.tsx`, `src/hooks/useUserRole.tsx`.
+
+## Próximo passo — Fase 5
+- Cadastrar metas reais; preencher datas de pagamento pendentes (2026/03, 2026/04) e conferir 2016/02 e 2026/01; remover `dashboard_mensal` e `ranking_corretores`.

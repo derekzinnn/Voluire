@@ -92,6 +92,13 @@
       "when": 1790521857732,
       "tag": "0012_fase3_metas",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1790522047551,
+      "tag": "0013_fase4_fechamento",
+      "breakpoints": true
     }
   ]
 }
