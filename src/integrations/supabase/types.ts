@@ -776,6 +776,36 @@ export type Database = {
       }
     }
     Views: {
+      vw_parcelas_em_atraso: {
+        Row: {
+          cliente_nome: string | null
+          data_prevista: string | null
+          dias_adiados: number | null
+          forma_pagamento: string | null
+          id: string | null
+          numero: number | null
+          numero_contrato: string | null
+          tipo: string | null
+          valor: number | null
+          venda_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "venda_parcelas_venda_id_fkey"
+            columns: ["venda_id"]
+            isOneToOne: false
+            referencedRelation: "vendas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "venda_parcelas_venda_id_fkey"
+            columns: ["venda_id"]
+            isOneToOne: false
+            referencedRelation: "vw_vgv_vendas"
+            referencedColumns: ["venda_id"]
+          },
+        ]
+      }
       vw_vgv_corretor: {
         Row: {
           corretor_id: string | null

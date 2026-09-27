@@ -78,6 +78,13 @@
       "when": 1790521219250,
       "tag": "0010_fase1_valor_venda_distrato_vgv",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1790521776406,
+      "tag": "0011_fase2_vw_parcelas_em_atraso",
+      "breakpoints": true
     }
   ]
 }
