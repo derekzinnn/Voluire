@@ -43,7 +43,8 @@ export function useParcelasVencidas() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("venda_parcelas")
-        .select("id, numero, valor, data_prevista, dias_adiados, tipo, venda_id, vendas(numero_contrato, cliente_nome, forma_pagamento)")
+        .select("id, numero, valor, data_prevista, dias_adiados, tipo, venda_id, vendas!inner(numero_contrato, cliente_nome, forma_pagamento, distrato)")
+        .eq("vendas.distrato", false)
         .neq("status", "recebida")
         .lte("data_prevista", hoje())
         .order("data_prevista");
@@ -82,7 +83,8 @@ export default function ParcelasVencidasDialog({ open, onOpenChange }: Props = {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("venda_parcelas")
-        .select("id, numero, valor, data_prevista, dias_adiados, tipo, venda_id, vendas(numero_contrato, cliente_nome, forma_pagamento)")
+        .select("id, numero, valor, data_prevista, dias_adiados, tipo, venda_id, vendas!inner(numero_contrato, cliente_nome, forma_pagamento, distrato)")
+        .eq("vendas.distrato", false)
         .neq("status", "recebida")
         .lte("data_prevista", hoje())
         .order("data_prevista");
