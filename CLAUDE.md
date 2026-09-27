@@ -112,3 +112,14 @@
 
 ## Próximo passo — Fase 3: Dashboard
 - Ajustar layout ao VGV quitado por data de pagamento; remover/migrar `dashboard_mensal` e `ranking_corretores`.
+
+## Fase 3 — Dashboard — CONCLUÍDA
+- Seletores de ano começam em 2025 (`ANO_INICIAL` em `src/lib/metas.ts`), no Dashboard, Financeiro e Metas.
+- Três blocos (Mês, Trimestre, Ano), cada um com seletor próprio (padrão = período atual em America/Sao_Paulo): Meta, VGV Realizado (`vw_vgv_vendas` por `data_venda`), VGV Quitado (`vw_vgv_parcelas` por `data_recebimento`), Falta para meta + barra de progresso.
+- `faltaParaMeta`/`progressoMeta` em `src/lib/metas.ts` são o único lugar da fórmula (hoje sobre Realizado; trocar para Quitado ali).
+- Metas: não existiam (módulo antigo foi removido). Criada `metas_vgv` (tipo mes/trimestre/ano, ano, periodo, valor), leitura para quem tem cargo, escrita só diretor, com log. Trimestre/ano = meta específica se existir, senão soma das mensais. Editor: botão "Metas" (só diretor).
+- RBAC: corretor vê só os próprios números (fatia de `vw_vgv_corretor`, quitado proporcional à fatia) e não vê metas; demais cargos seguem a RLS das views.
+- Arquivos: `drizzle/migrations/0012_fase3_metas.sql`, `src/lib/metas.ts`, `src/components/dashboard/BlocosMeta.tsx`, `src/components/dashboard/MetasDialog.tsx`, `src/pages/Dashboard.tsx`, `src/pages/Financeiro.tsx`.
+
+## Próximo passo — Fase 4
+- Cadastrar metas reais de 2025/2026; aba Fechamento; remover `dashboard_mensal` e `ranking_corretores` (não usadas).

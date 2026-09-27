@@ -25,7 +25,7 @@ export default function Financeiro() {
   const currentYear = new Date().getFullYear();
   const [ano, setAno] = useState<string>(currentYear.toString());
   const anoNum = Number(ano);
-  const anosDisponiveis = Array.from({ length: 5 }, (_, i) => currentYear + 1 - i);
+  const anosDisponiveis = Array.from({ length: Math.max(currentYear + 1 - 2025 + 1, 1) }, (_, i) => currentYear + 1 - i);
 
   const { data: despesas = [] } = useQuery({
     queryKey: ["despesas", anoNum],

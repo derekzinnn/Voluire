@@ -9,6 +9,9 @@ import { formatCurrency, MESES } from "@/lib/format";
 import { TrendingUp, CheckCircle2, Building2, Clock } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { useUserRole } from "@/hooks/useUserRole";
+import { BlocosMeta } from "@/components/dashboard/BlocosMeta";
+import { MetasDialog } from "@/components/dashboard/MetasDialog";
+import { anosDisponiveis, hojeSP } from "@/lib/metas";
 
 interface ResumoMes {
   mes: number;
@@ -22,8 +25,8 @@ interface ResumoMes {
 }
 
 export default function Dashboard() {
-  const anoAtual = new Date().getFullYear();
-  const { role, isGestor, loading: roleLoading } = useUserRole();
+  const anoAtual = hojeSP().ano;
+  const { role, isGestor, isDiretor, loading: roleLoading } = useUserRole();
   const [anoSel, setAnoSel] = useState(anoAtual);
 
   const { data: resumo = [] } = useQuery({
@@ -66,7 +69,7 @@ export default function Dashboard() {
   }));
 
   const escopo = role === "diretor" ? "Empresa" : role === "gerente" ? "Minha equipe" : "Meus números";
-  const anos = [anoAtual, anoAtual - 1, anoAtual - 2];
+  const anos = anosDisponiveis(anoAtual);
 
   if (roleLoading) {
     return (
@@ -93,8 +96,15 @@ export default function Dashboard() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Badge variant="outline" className="gap-1.5 px-3 py-1 text-sm">
-          <Building2 className="h-3.5 w-3.5" /> {escopo} · {anoSel}
+          <Building2 className="h-3.5 w-3.5" /> {escopo}
         </Badge>
+        {isDiretor && <MetasDialog />}
+      </div>
+
+      <BlocosMeta />
+
+      <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+        <h2 className="text-lg font-semibold">Resumo do ano {anoSel}</h2>
         <AnoSeletor />
       </div>
 
