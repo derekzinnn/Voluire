@@ -430,6 +430,36 @@ export type Database = {
         }
         Relationships: []
       }
+      metas_vgv: {
+        Row: {
+          ano: number
+          created_at: string
+          id: string
+          periodo: number
+          tipo: string
+          updated_at: string
+          valor: number
+        }
+        Insert: {
+          ano: number
+          created_at?: string
+          id?: string
+          periodo?: number
+          tipo: string
+          updated_at?: string
+          valor?: number
+        }
+        Update: {
+          ano?: number
+          created_at?: string
+          id?: string
+          periodo?: number
+          tipo?: string
+          updated_at?: string
+          valor?: number
+        }
+        Relationships: []
+      }
       parceiros: {
         Row: {
           ativo: boolean
