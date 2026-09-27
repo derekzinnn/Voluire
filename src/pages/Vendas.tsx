@@ -544,7 +544,7 @@ export default function Vendas() {
       </div>
 
       {isGestor && (
-        <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) { setEditId(null); setForm(emptyForm()); setParcelasEdit([]); setStep(0); setTemOutroCorretor(false); } }}>
+        <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) { setEditId(null); setForm(emptyForm()); setParcelasEdit([]); setStep(0); setTemOutroCorretor(false); setVvManual(false); } }}>
           <DialogTrigger asChild>
             <Button><Plus className="mr-2 h-4 w-4" />Novo contrato</Button>
           </DialogTrigger>
@@ -563,7 +563,6 @@ export default function Vendas() {
                   <SelectContent>
                     <SelectItem value="ativa">Ativa</SelectItem>
                     <SelectItem value="quitada">Quitada</SelectItem>
-                    <SelectItem value="distrato">Distrato</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -682,7 +681,7 @@ export default function Vendas() {
             {step === 2 && (
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label>Valor da venda (R$) *</Label>
+                <Label>Valor do contrato (R$) *</Label>
                 <Input
                   inputMode="numeric"
                   placeholder="0,00"
@@ -692,6 +691,7 @@ export default function Vendas() {
                     set("valor", masked ? String(parseCurrencyInput(masked)) : "");
                   }}
                 />
+                <p className="text-xs text-muted-foreground">Preço real do imóvel. Fica só como registro, não entra nos relatórios.</p>
               </div>
               <div className="space-y-2">
                 <Label>Venda em parceria? *</Label>
@@ -701,13 +701,13 @@ export default function Vendas() {
                     set("tem_parceria", v);
                     if (v !== "sim") {
                       set("parceria_nome", "");
-                      set("comissao_percentual_bruta", "6");
+                      set("comissao_percentual_bruta", String(taxaPadrao));
                     }
                   }}
                 >
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="nao">Não — comissão de 6%</SelectItem>
+                    <SelectItem value="nao">Não — comissão de {fmtPct(taxaPadrao)}%</SelectItem>
                     <SelectItem value="sim">Sim — comissão diferente</SelectItem>
                   </SelectContent>
                 </Select>
@@ -739,7 +739,28 @@ export default function Vendas() {
                 <p className="text-xs text-muted-foreground">
                   {form.tem_parceria === "sim"
                     ? "Parceria: informe o percentual acordado no contrato."
-                    : "Sem parceria: comissão fixa de 6%."}
+                    : `Sem parceria: comissão padrão de ${fmtPct(taxaPadrao)}%.`}
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label>Valor de venda — VGV (R$) *</Label>
+                <Input
+                  inputMode="numeric"
+                  placeholder="0,00"
+                  value={numberToCurrencyInput(form.valor_venda)}
+                  onChange={(e) => {
+                    const masked = formatCurrencyInput(e.target.value);
+                    setVvManual(true);
+                    set("valor_venda", masked ? String(parseCurrencyInput(masked)) : "");
+                  }}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Sugestão: {formatCurrency(comissaoBruta)} ÷ {fmtPct(taxaPadrao)}% = {formatCurrency(vgvSugerido)}. É o valor usado em todos os relatórios.
+                  {vvManual && Math.abs((Number(form.valor_venda) || 0) - vgvSugerido) > 0.01 && (
+                    <button type="button" className="ml-1 text-primary underline" onClick={() => setVvManual(false)}>
+                      Usar sugestão
+                    </button>
+                  )}
                 </p>
               </div>
               <div className="rounded-md border p-3 text-sm sm:col-span-2">
@@ -814,6 +835,12 @@ export default function Vendas() {
                           <DatePickerField
                             value={p.data_prevista}
                             onChange={(v) => setParcela(i, "data_prevista", v)}
+                            placeholder="Vencimento"
+                          />
+                          <DatePickerField
+                            value={p.data_recebimento ?? ""}
+                            onChange={(v) => setParcela(i, "data_recebimento", v)}
+                            placeholder={form.status === "quitada" ? "Pago em *" : "Pago em (opcional)"}
                           />
                           <Button
                             type="button"
@@ -854,10 +881,16 @@ export default function Vendas() {
                 </>
               )}
               {form.forma_pagamento === "a_vista" && (
-                <div className="space-y-2">
-                  <Label>Recebimento previsto</Label>
-                  <DatePickerField value={form.primeira_parcela} onChange={(v) => set("primeira_parcela", v)} />
-                </div>
+                <>
+                  <div className="space-y-2">
+                    <Label>Recebimento previsto</Label>
+                    <DatePickerField value={form.primeira_parcela} onChange={(v) => set("primeira_parcela", v)} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Data do pagamento {form.status === "quitada" ? "*" : "(se já foi pago)"}</Label>
+                    <DatePickerField value={form.data_pagamento} onChange={(v) => set("data_pagamento", v)} placeholder="Ainda não pago" />
+                  </div>
+                </>
               )}
 
               <div className="rounded-md border bg-muted/40 p-3 text-sm sm:col-span-2">
@@ -995,12 +1028,13 @@ export default function Vendas() {
                 <TableHead>Pagamento</TableHead>
                 <TableHead>Data</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Distrato</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {(vendas as any[]).map((v) => (
-                <TableRow key={v.id}>
+                <TableRow key={v.id} className={v.distrato ? "opacity-60" : undefined}>
                   <TableCell className="font-mono text-xs">{v.numero_contrato}</TableCell>
                   <TableCell>
                     <div className="font-medium">{v.cliente_nome}</div>
@@ -1012,19 +1046,30 @@ export default function Vendas() {
                   <TableCell>{v.tem_parceria ? v.parceria_nome ?? "—" : "—"}</TableCell>
                   <TableCell className="text-sm">
                     {(v.venda_corretores ?? []).map((p: any) => (
-                      <div key={p.id} className="whitespace-nowrap">
-                        {p.corretores?.nome}
-                        <span className="ml-1 text-xs text-muted-foreground">
-                          {formatPercent(Number(p.percentual_corretor))}
-                          {Number(p.participacao_percentual) !== 100 ? ` · ${formatPercent(Number(p.participacao_percentual))}` : ""}
-                        </span>
-                      </div>
+                      <div key={p.id} className="whitespace-nowrap">{p.corretores?.nome}</div>
                     ))}
                   </TableCell>
-                  <TableCell className="font-medium">{formatCurrency(Number(v.valor))}</TableCell>
+                  <TableCell>
+                    <div className="font-medium">{formatCurrency(Number(v.valor_venda ?? v.valor))}</div>
+                    <div className="text-xs text-muted-foreground">Contrato: {formatCurrency(Number(v.valor))}</div>
+                  </TableCell>
                   <TableCell>{FORMA_PAGAMENTO_LABELS[v.forma_pagamento] ?? v.forma_pagamento}</TableCell>
                   <TableCell>{formatDate(v.data_venda)}</TableCell>
-                  <TableCell><Badge className={statusColors[v.status]}>{v.status}</Badge></TableCell>
+                  <TableCell>
+                    {v.distrato ? (
+                      <Badge variant="destructive">Distrato</Badge>
+                    ) : (
+                      <Badge className={statusColors[v.status]}>{v.status}</Badge>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <Checkbox
+                      checked={!!v.distrato}
+                      disabled={!isGestor}
+                      onCheckedChange={() => setDistratoAlvo(v)}
+                      aria-label="Marcar distrato"
+                    />
+                  </TableCell>
                   <TableCell className="text-right whitespace-nowrap">
                     <Button variant="ghost" size="icon" onClick={() => setParcelasVenda(v)} title="Parcelas">
                       <Receipt className="h-4 w-4" />
@@ -1042,7 +1087,7 @@ export default function Vendas() {
               ))}
               {vendas.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={10} className="py-8 text-center text-muted-foreground">Nenhum contrato registrado</TableCell>
+                  <TableCell colSpan={11} className="py-8 text-center text-muted-foreground">Nenhum contrato registrado</TableCell>
                 </TableRow>
               )}
             </TableBody>
@@ -1077,18 +1122,11 @@ export default function Vendas() {
                   <TableCell className="whitespace-nowrap">
                     {isGestor && p.status !== "recebida" && (
                       <>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() =>
-                            atualizarParcela.mutate({
-                              id: p.id,
-                              patch: { status: "recebida", data_recebimento: new Date().toISOString().split("T")[0] },
-                            })
+                        <ReceberPopover
+                          onConfirm={(data) =>
+                            atualizarParcela.mutate({ id: p.id, patch: { status: "recebida", data_recebimento: data } })
                           }
-                        >
-                          Receber
-                        </Button>
+                        />
                         {parcelasVenda?.forma_pagamento === "financiamento" && (
                           <AdiarPopover
                             onConfirm={(dias) => {
@@ -1137,6 +1175,32 @@ export default function Vendas() {
               }}
             >
               Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!distratoAlvo} onOpenChange={(o) => !o && setDistratoAlvo(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {distratoAlvo?.distrato ? "Desfazer distrato desta venda?" : "Confirmar distrato desta venda?"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {distratoAlvo?.distrato
+                ? `O contrato ${distratoAlvo?.numero_contrato} voltará a contar em todos os relatórios.`
+                : `O contrato ${distratoAlvo?.numero_contrato} continuará na lista, mas sairá de todos os relatórios, rankings e parcelas em atraso.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (distratoAlvo) marcarDistrato.mutate({ id: distratoAlvo.id, valor: !distratoAlvo.distrato });
+                setDistratoAlvo(null);
+              }}
+            >
+              Confirmar
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
