@@ -29,7 +29,7 @@ export const PERMISSOES: { key: string; label: string; descricao: string }[] = [
   { key: "corretores.ver_todos", label: "Ver todos os corretores", descricao: "Vê a lista completa de corretores" },
   { key: "corretores.gerenciar", label: "Cadastrar e editar corretores", descricao: "Cria e altera fichas de corretor" },
   
-  { key: "empreendimentos.gerenciar", label: "Gerenciar empreendimentos", descricao: "Cadastra empreendimentos e imóveis" },
+  { key: "empreendimentos.gerenciar", label: "Gerenciar imóveis", descricao: "Cadastra empreendimentos e imóveis" },
   { key: "fechamento.ver_todos", label: "Fechamento de todos", descricao: "Vê o fechamento de todos os corretores" },
   { key: "rankings.ver", label: "Ver rankings", descricao: "Vê rankings de premiação no Fechamento" },
   { key: "usuarios.gerenciar", label: "Gerenciar usuários e cargos", descricao: "Convida usuários e altera permissões" },
@@ -142,7 +142,7 @@ export function canAccessPage(role: AppRole | null, page: string, permissions: s
   if (page === "/corretores") return has("corretores.ver_todos") || has("corretores.gerenciar");
   if (page === "/financeiro") return has("financeiro.ver") || has("financeiro.gerenciar");
   
-  if (page === "/empreendimentos") return has("empreendimentos.gerenciar");
+  if (page === "/imoveis" || page === "/empreendimentos") return has("empreendimentos.gerenciar");
   if (page === "/minha-equipe") return role === "gerente";
   if (page === "/gestao-usuarios") return has("usuarios.gerenciar");
   if (page === "/logs") return false; // histórico do sistema: só diretor

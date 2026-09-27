@@ -604,7 +604,7 @@ export default function Vendas() {
                 <DatePickerField value={form.data_venda} onChange={(v) => set("data_venda", v)} />
               </div>
               <div className="space-y-2">
-                <Label>Tipo de imóvel</Label>
+                <Label>Imóvel</Label>
                 <Select value={form.empreendimento_id} onValueChange={(v) => set("empreendimento_id", v)}>
                   <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                   <SelectContent>
