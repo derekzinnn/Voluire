@@ -40,7 +40,7 @@ export default function Financeiro() {
     queryFn: async () => {
       const { data } = await supabase
         .from("comissoes")
-        .select("valor_total, valor_corretores, valor_empresa, percentual_total, status, data_recebimento, vendas(id, numero_contrato, cliente_nome, unidade, valor, data_venda, status, forma_pagamento)");
+        .select("valor_total, valor_corretores, valor_empresa, percentual_total, status, data_recebimento, vendas(id, numero_contrato, cliente_nome, unidade, valor, data_venda, status, distrato, forma_pagamento)");
       return data || [];
     },
   });
@@ -50,7 +50,7 @@ export default function Financeiro() {
     queryFn: async () => {
       const { data } = await supabase
         .from("venda_parcelas")
-        .select("id, venda_id, valor, status, data_recebimento, vendas(id, valor, status)");
+        .select("id, venda_id, valor, status, data_recebimento, vendas(id, valor, status, distrato)");
       return data || [];
     },
   });
@@ -98,7 +98,7 @@ export default function Financeiro() {
     const porParcelas = parcelas
       .filter((p: any) => {
         if (p.status !== "recebida" || !p.data_recebimento) return false;
-        if (p.vendas?.status === "distrato") return false;
+        if (p.vendas?.distrato || p.vendas?.status === "distrato") return false;
         const d = parseLocalDate(p.data_recebimento);
         return d?.getMonth() === i && d.getFullYear() === anoNum;
       })
@@ -107,6 +107,7 @@ export default function Financeiro() {
     const porComissao = comissoes
       .filter((c: any) => {
         if (c.status !== "recebido" || !c.data_recebimento) return false;
+        if (c.vendas?.distrato || c.vendas?.status === "distrato") return false;
         if (c.vendas?.id && vendasComParcelas.has(c.vendas.id)) return false;
         const d = parseLocalDate(c.data_recebimento);
         return d?.getMonth() === i && d.getFullYear() === anoNum;
@@ -142,7 +143,7 @@ export default function Financeiro() {
   const comissoesPorMes = (i: number) =>
     comissoes.filter(c => {
       const venda = (c as any).vendas;
-      if (!venda || venda.status === "distrato") return false;
+      if (!venda || venda.distrato || venda.status === "distrato") return false;
       const d = parseLocalDate(venda.data_venda);
       return d?.getMonth() === i && d.getFullYear() === anoNum;
     });

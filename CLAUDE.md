@@ -98,6 +98,17 @@
 - `src/pages/Vendas.tsx`, `src/lib/vendas.ts`, `src/components/ParcelasVencidasDialog.tsx`.
 - Funções reescritas sobre as views: `resumo_dashboard_anual`, `ranking_periodo`, `totais_empresa`.
 
-## Próximo passo — Fase 2: Dashboard
+## (Antigo) Próximo passo — Fase 2: Dashboard → agora Fase 3
 - Ajustar layout do Dashboard ao VGV quitado por data de pagamento (hoje "a receber" mensal pode ficar negativo num mês em que se recebe venda de mês anterior).
 - `dashboard_mensal` e `ranking_corretores` não são usadas pela interface; migrar para as views ou remover.
+
+## Fase 2 — Financeiro e Parcelas em atraso — CONCLUÍDA
+- Financeiro: recebimentos pelo `data_recebimento` (data real do pagamento), competência por `data_venda`; distrato excluído (`vendas.distrato`). Nunca `created_at`.
+- Regra única de atraso: view `vw_parcelas_em_atraso` (security_invoker) — sem pagamento, `data_prevista` < hoje (America/Sao_Paulo), venda não distrato e não quitada. Usada pelo pop-up e pelo sino (`ParcelasVencidasDialog.tsx`).
+- Correção de dados: parcelas de vendas quitadas (2026/03, 2026/04) marcadas como recebidas com data de pagamento em branco — a preencher manualmente.
+- Datas suspeitas (pagamento = data de cadastro 22/09/2026): contratos 2016/02 e 2026/01 — conferir manualmente.
+- Antes/depois: 4 → 2 parcelas em atraso.
+- Arquivos: `drizzle/migrations/0011_fase2_vw_parcelas_em_atraso.sql`, `src/components/ParcelasVencidasDialog.tsx`, `src/pages/Financeiro.tsx`.
+
+## Próximo passo — Fase 3: Dashboard
+- Ajustar layout ao VGV quitado por data de pagamento; remover/migrar `dashboard_mensal` e `ranking_corretores`.

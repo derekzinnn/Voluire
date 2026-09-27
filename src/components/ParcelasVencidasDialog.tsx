@@ -42,14 +42,14 @@ export function useParcelasVencidas() {
     enabled: !loading && isGestor,
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("venda_parcelas")
-        .select("id, numero, valor, data_prevista, dias_adiados, tipo, venda_id, vendas!inner(numero_contrato, cliente_nome, forma_pagamento, distrato)")
-        .eq("vendas.distrato", false)
-        .neq("status", "recebida")
-        .lte("data_prevista", hoje())
+        .from("vw_parcelas_em_atraso")
+        .select("*")
         .order("data_prevista");
       if (error) throw error;
-      return data ?? [];
+      return (data ?? []).map((p: any) => ({
+        ...p,
+        vendas: { numero_contrato: p.numero_contrato, cliente_nome: p.cliente_nome, forma_pagamento: p.forma_pagamento },
+      }));
     },
   });
 }
@@ -82,14 +82,14 @@ export default function ParcelasVencidasDialog({ open, onOpenChange }: Props = {
     enabled: !loading && isGestor,
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("venda_parcelas")
-        .select("id, numero, valor, data_prevista, dias_adiados, tipo, venda_id, vendas!inner(numero_contrato, cliente_nome, forma_pagamento, distrato)")
-        .eq("vendas.distrato", false)
-        .neq("status", "recebida")
-        .lte("data_prevista", hoje())
+        .from("vw_parcelas_em_atraso")
+        .select("*")
         .order("data_prevista");
       if (error) throw error;
-      return data ?? [];
+      return (data ?? []).map((p: any) => ({
+        ...p,
+        vendas: { numero_contrato: p.numero_contrato, cliente_nome: p.cliente_nome, forma_pagamento: p.forma_pagamento },
+      }));
     },
   });
 
