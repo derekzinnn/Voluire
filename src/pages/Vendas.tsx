@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -52,6 +53,36 @@ function AdiarPopover({ onConfirm }: { onConfirm: (dias: number) => void }) {
   );
 }
 
+function ReceberPopover({ onConfirm }: { onConfirm: (data: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const [data, setData] = useState("");
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button variant="ghost" size="sm">Receber</Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-64 space-y-2 pointer-events-auto" align="end">
+        <Label>Data do pagamento</Label>
+        <DatePickerField value={data} onChange={setData} placeholder="Quando foi pago?" />
+        <Button
+          size="sm"
+          className="w-full"
+          disabled={!data}
+          onClick={() => {
+            onConfirm(data);
+            setOpen(false);
+            setData("");
+          }}
+        >
+          Confirmar recebimento
+        </Button>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+type ParcelaEdit = { valor: string; data_prevista: string; data_recebimento?: string };
+
 function DatePickerField({ value, onChange, placeholder = "Selecione" }: { value: string; onChange: (v: string) => void; placeholder?: string }) {
   const date = value ? new Date(value + "T12:00:00") : undefined;
   return (
@@ -100,6 +131,8 @@ type FormState = {
   unidade: string;
   empreendimento_id: string;
   valor: string;
+  valor_venda: string;
+  data_pagamento: string;
   data_venda: string;
   comissao_percentual_bruta: string;
   forma_pagamento: string;
@@ -124,6 +157,8 @@ const emptyForm = (): FormState => ({
   unidade: "",
   empreendimento_id: NONE,
   valor: "",
+  valor_venda: "",
+  data_pagamento: "",
   data_venda: new Date().toISOString().split("T")[0],
   comissao_percentual_bruta: "6",
   forma_pagamento: "a_vista",
@@ -148,11 +183,21 @@ export default function Vendas() {
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm());
   const [parcelasVenda, setParcelasVenda] = useState<any | null>(null);
-  const [parcelasEdit, setParcelasEdit] = useState<{ valor: string; data_prevista: string }[]>([]);
+  const [parcelasEdit, setParcelasEdit] = useState<ParcelaEdit[]>([]);
   const [step, setStep] = useState(0);
   const [temOutroCorretor, setTemOutroCorretor] = useState(false);
   const [vendaParaExcluir, setVendaParaExcluir] = useState<string | null>(null);
+  const [distratoAlvo, setDistratoAlvo] = useState<any | null>(null);
+  const [vvManual, setVvManual] = useState(false);
   const set = (k: keyof FormState, v: string) => setForm((f) => ({ ...f, [k]: v }));
+
+  const { data: taxaPadrao = 6 } = useQuery({
+    queryKey: ["config-taxa-comissao"],
+    queryFn: async () => {
+      const { data } = await supabase.from("configuracoes").select("valor").eq("chave", "taxa_comissao_padrao").maybeSingle();
+      return Number(data?.valor) || 6;
+    },
+  });
 
   function avancar() {
     const erro = (msg: string) => {
@@ -178,18 +223,22 @@ export default function Vendas() {
       if (temOutroCorretor && form.corretor2_id === NONE) return erro("Selecione qual foi o outro corretor da venda.");
     }
     if (step === 2) {
-      if (!(Number(form.valor) > 0)) return erro("Informe o valor da venda.");
+      if (!(Number(form.valor) > 0)) return erro("Informe o valor do contrato.");
       if (!(Number(form.comissao_percentual_bruta) > 0)) return erro("Informe a comissão bruta (%).");
+      if (!(Number(form.valor_venda) > 0)) return erro("Informe o valor de venda (VGV).");
       if (form.tem_parceria === "sim" && !form.parceria_nome.trim()) return erro("Informe o nome do parceiro.");
     }
     if (step === 3) {
       if (form.forma_pagamento === "a_vista") {
         if (!form.primeira_parcela) return erro("Informe a data prevista de recebimento.");
+        if (form.status === "quitada" && !form.data_pagamento) return erro("Venda quitada: informe a data do pagamento.");
       } else {
         if (parcelasEdit.length === 0) return erro("Gere ou adicione as parcelas.");
         if (parcelasEdit.some((p) => !p.data_prevista)) return erro("Informe a data de todas as parcelas.");
         if (Math.abs(totalParcelas - (Number(form.valor) || 0)) > 0.05)
-          return erro("A soma das parcelas deve fechar com o valor da venda.");
+          return erro("A soma das parcelas deve fechar com o valor do contrato.");
+        if (form.status === "quitada" && parcelasEdit.some((p) => !p.data_recebimento))
+          return erro("Venda quitada: informe a data de pagamento de todas as parcelas.");
       }
     }
     setStep((s) => Math.min(s + 1, STEPS.length - 1));
@@ -211,7 +260,7 @@ export default function Vendas() {
   const regenerar = () =>
     setParcelasEdit(gerarParcelas(Number(form.qtd_parcelas), form.primeira_parcela, Number(form.valor)));
 
-  const setParcela = (i: number, k: "valor" | "data_prevista", v: string) =>
+  const setParcela = (i: number, k: "valor" | "data_prevista" | "data_recebimento", v: string) =>
     setParcelasEdit((arr) => arr.map((p, idx) => (idx === i ? { ...p, [k]: v } : p)));
 
   const totalParcelas = parcelasEdit.reduce((s, p) => s + (Number(p.valor) || 0), 0);
@@ -265,6 +314,11 @@ export default function Vendas() {
   const vendedorFinal = form.vendedor_nome;
   const pctBruta = Number(form.comissao_percentual_bruta) || 0;
   const comissaoBruta = (Number(form.valor) || 0) * pctBruta / 100;
+  // Valor de Venda (VGV proporcional) = comissão cobrada / taxa padrão
+  const vgvSugerido = taxaPadrao > 0 ? Math.round((comissaoBruta / (taxaPadrao / 100)) * 100) / 100 : 0;
+  useEffect(() => {
+    if (!vvManual) setForm((f) => ({ ...f, valor_venda: vgvSugerido ? String(vgvSugerido) : "" }));
+  }, [vgvSugerido, vvManual]);
   const descontoAgenciador = !isPronto
     ? 0
     : form.agenciador_tipo === "voluire"
@@ -304,9 +358,10 @@ export default function Vendas() {
         empreendimento_id: form.empreendimento_id === NONE ? null : form.empreendimento_id,
         parceiro_id: null,
         valor: Number(form.valor),
+        valor_venda: Number(form.valor_venda) || vgvSugerido,
         data_venda: form.data_venda,
         comissao_percentual_bruta:
-          form.tem_parceria === "sim" ? Number(form.comissao_percentual_bruta) || 6 : 6,
+          form.tem_parceria === "sim" ? Number(form.comissao_percentual_bruta) || taxaPadrao : taxaPadrao,
         forma_pagamento: form.forma_pagamento,
         captador_corretor_id:
           isPronto && form.agenciador_tipo === "corretor" && form.captador_corretor_id !== NONE
@@ -343,9 +398,9 @@ export default function Vendas() {
 
       // Parcelas: recriadas conforme a forma de pagamento
       await supabase.from("venda_parcelas").delete().eq("venda_id", vendaId!);
-      const cronograma =
+      const cronograma: ParcelaEdit[] =
         form.forma_pagamento === "a_vista"
-          ? [{ valor: form.valor, data_prevista: form.primeira_parcela }]
+          ? [{ valor: form.valor, data_prevista: form.primeira_parcela, data_recebimento: form.data_pagamento }]
           : parcelasEdit.length > 0
             ? parcelasEdit
             : gerarParcelas(Number(form.qtd_parcelas), form.primeira_parcela, Number(form.valor));
@@ -356,7 +411,8 @@ export default function Vendas() {
         valor: Number(p.valor) || 0,
         data_prevista: p.data_prevista,
         tipo: form.forma_pagamento,
-        status: "prevista",
+        status: p.data_recebimento ? "recebida" : "prevista",
+        data_recebimento: p.data_recebimento || null,
       }));
       const { error: pErr } = await supabase.from("venda_parcelas").insert(parcelasRows);
       if (pErr) throw pErr;
@@ -364,11 +420,14 @@ export default function Vendas() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["vendas"] });
       queryClient.invalidateQueries({ queryKey: ["comissoes"] });
+      queryClient.invalidateQueries({ queryKey: ["parcelas-vencidas"] });
+      queryClient.invalidateQueries({ queryKey: ["resumo-dashboard"] });
       toast({ title: editId ? "Contrato atualizado!" : "Contrato registrado!" });
       setOpen(false);
       setEditId(null);
       setForm(emptyForm());
       setParcelasEdit([]);
+      setVvManual(false);
     },
     onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
   });
@@ -399,15 +458,37 @@ export default function Vendas() {
     onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
   });
 
+  const marcarDistrato = useMutation({
+    mutationFn: async ({ id, valor }: { id: string; valor: boolean }) => {
+      const { error } = await supabase.from("vendas").update({ distrato: valor }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: (_d, vars) => {
+      queryClient.invalidateQueries({ queryKey: ["vendas"] });
+      queryClient.invalidateQueries({ queryKey: ["parcelas-vencidas"] });
+      queryClient.invalidateQueries({ queryKey: ["resumo-dashboard"] });
+      toast({ title: vars.valor ? "Venda marcada como distrato" : "Distrato desfeito" });
+    },
+    onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
+  });
+
   async function abrirEdicao(v: any) {
     const parts = v.venda_corretores ?? [];
     setEditId(v.id);
+    setVvManual(true);
     const { data: ps } = await supabase
       .from("venda_parcelas")
-      .select("valor, data_prevista")
+      .select("valor, data_prevista, data_recebimento, status")
       .eq("venda_id", v.id)
       .order("numero");
-    setParcelasEdit((ps ?? []).map((p: any) => ({ valor: String(p.valor), data_prevista: p.data_prevista })));
+    setParcelasEdit(
+      (ps ?? []).map((p: any) => ({
+        valor: String(p.valor),
+        data_prevista: p.data_prevista,
+        data_recebimento: p.status === "recebida" ? p.data_recebimento ?? "" : "",
+      }))
+    );
+    const primeira: any = (ps ?? [])[0];
     setForm({
       numero_contrato: v.numero_contrato ?? "",
       cliente_nome: v.cliente_nome ?? "",
@@ -417,19 +498,21 @@ export default function Vendas() {
       unidade: v.unidade ?? "",
       empreendimento_id: v.empreendimento_id ?? NONE,
       valor: String(v.valor ?? ""),
+      valor_venda: String(v.valor_venda ?? v.valor ?? ""),
+      data_pagamento: primeira?.status === "recebida" ? primeira?.data_recebimento ?? "" : "",
       data_venda: v.data_venda ?? "",
-      comissao_percentual_bruta: String(v.comissao_percentual_bruta ?? 6),
+      comissao_percentual_bruta: String(v.comissao_percentual_bruta ?? taxaPadrao),
       forma_pagamento: v.forma_pagamento ?? "a_vista",
       captador_corretor_id: v.captador_corretor_id ?? NONE,
       agenciador_tipo: v.agenciador_tipo ?? "proprio",
-      status: v.status ?? "ativa",
+      status: v.status === "distrato" ? "ativa" : v.status ?? "ativa",
       observacao: v.observacao ?? "",
       corretor1_id: parts[0]?.corretor_id ?? "",
       corretor1_part: String(parts[0]?.participacao_percentual ?? 100),
       corretor2_id: parts[1]?.corretor_id ?? NONE,
       corretor2_part: String(parts[1]?.participacao_percentual ?? 0),
       qtd_parcelas: String((ps ?? []).length || 1),
-      primeira_parcela: (ps ?? [])[0]?.data_prevista ?? v.data_venda ?? new Date().toISOString().split("T")[0],
+      primeira_parcela: primeira?.data_prevista ?? v.data_venda ?? "",
     });
     setTemOutroCorretor(!!parts[1]?.corretor_id);
     setStep(0);
@@ -437,8 +520,8 @@ export default function Vendas() {
   }
 
   const totais = useMemo(() => {
-    const ativas = (vendas as any[]).filter((v) => v.status !== "distrato");
-    const bruto = ativas.reduce((s, v) => s + (Number(v.valor) || 0), 0);
+    const ativas = (vendas as any[]).filter((v) => !v.distrato && v.status !== "distrato");
+    const bruto = ativas.reduce((s, v) => s + (Number(v.valor_venda ?? v.valor) || 0), 0);
     const com = ativas.reduce((s, v) => s + (Number(v.comissoes?.valor_total ?? v.comissoes?.[0]?.valor_total) || 0), 0);
     return { qtd: ativas.length, bruto, com };
   }, [vendas]);
@@ -461,7 +544,7 @@ export default function Vendas() {
       </div>
 
       {isGestor && (
-        <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) { setEditId(null); setForm(emptyForm()); setParcelasEdit([]); setStep(0); setTemOutroCorretor(false); } }}>
+        <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) { setEditId(null); setForm(emptyForm()); setParcelasEdit([]); setStep(0); setTemOutroCorretor(false); setVvManual(false); } }}>
           <DialogTrigger asChild>
             <Button><Plus className="mr-2 h-4 w-4" />Novo contrato</Button>
           </DialogTrigger>
@@ -480,7 +563,6 @@ export default function Vendas() {
                   <SelectContent>
                     <SelectItem value="ativa">Ativa</SelectItem>
                     <SelectItem value="quitada">Quitada</SelectItem>
-                    <SelectItem value="distrato">Distrato</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -599,7 +681,7 @@ export default function Vendas() {
             {step === 2 && (
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label>Valor da venda (R$) *</Label>
+                <Label>Valor do contrato (R$) *</Label>
                 <Input
                   inputMode="numeric"
                   placeholder="0,00"
@@ -609,6 +691,7 @@ export default function Vendas() {
                     set("valor", masked ? String(parseCurrencyInput(masked)) : "");
                   }}
                 />
+                <p className="text-xs text-muted-foreground">Preço real do imóvel. Fica só como registro, não entra nos relatórios.</p>
               </div>
               <div className="space-y-2">
                 <Label>Venda em parceria? *</Label>
@@ -618,13 +701,13 @@ export default function Vendas() {
                     set("tem_parceria", v);
                     if (v !== "sim") {
                       set("parceria_nome", "");
-                      set("comissao_percentual_bruta", "6");
+                      set("comissao_percentual_bruta", String(taxaPadrao));
                     }
                   }}
                 >
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="nao">Não — comissão de 6%</SelectItem>
+                    <SelectItem value="nao">Não — comissão de {fmtPct(taxaPadrao)}%</SelectItem>
                     <SelectItem value="sim">Sim — comissão diferente</SelectItem>
                   </SelectContent>
                 </Select>
@@ -656,7 +739,28 @@ export default function Vendas() {
                 <p className="text-xs text-muted-foreground">
                   {form.tem_parceria === "sim"
                     ? "Parceria: informe o percentual acordado no contrato."
-                    : "Sem parceria: comissão fixa de 6%."}
+                    : `Sem parceria: comissão padrão de ${fmtPct(taxaPadrao)}%.`}
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label>Valor de venda — VGV (R$) *</Label>
+                <Input
+                  inputMode="numeric"
+                  placeholder="0,00"
+                  value={numberToCurrencyInput(form.valor_venda)}
+                  onChange={(e) => {
+                    const masked = formatCurrencyInput(e.target.value);
+                    setVvManual(true);
+                    set("valor_venda", masked ? String(parseCurrencyInput(masked)) : "");
+                  }}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Sugestão: {formatCurrency(comissaoBruta)} ÷ {fmtPct(taxaPadrao)}% = {formatCurrency(vgvSugerido)}. É o valor usado em todos os relatórios.
+                  {vvManual && Math.abs((Number(form.valor_venda) || 0) - vgvSugerido) > 0.01 && (
+                    <button type="button" className="ml-1 text-primary underline" onClick={() => setVvManual(false)}>
+                      Usar sugestão
+                    </button>
+                  )}
                 </p>
               </div>
               <div className="rounded-md border p-3 text-sm sm:col-span-2">
@@ -731,6 +835,12 @@ export default function Vendas() {
                           <DatePickerField
                             value={p.data_prevista}
                             onChange={(v) => setParcela(i, "data_prevista", v)}
+                            placeholder="Vencimento"
+                          />
+                          <DatePickerField
+                            value={p.data_recebimento ?? ""}
+                            onChange={(v) => setParcela(i, "data_recebimento", v)}
+                            placeholder={form.status === "quitada" ? "Pago em *" : "Pago em (opcional)"}
                           />
                           <Button
                             type="button"
@@ -771,10 +881,16 @@ export default function Vendas() {
                 </>
               )}
               {form.forma_pagamento === "a_vista" && (
-                <div className="space-y-2">
-                  <Label>Recebimento previsto</Label>
-                  <DatePickerField value={form.primeira_parcela} onChange={(v) => set("primeira_parcela", v)} />
-                </div>
+                <>
+                  <div className="space-y-2">
+                    <Label>Recebimento previsto</Label>
+                    <DatePickerField value={form.primeira_parcela} onChange={(v) => set("primeira_parcela", v)} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Data do pagamento {form.status === "quitada" ? "*" : "(se já foi pago)"}</Label>
+                    <DatePickerField value={form.data_pagamento} onChange={(v) => set("data_pagamento", v)} placeholder="Ainda não pago" />
+                  </div>
+                </>
               )}
 
               <div className="rounded-md border bg-muted/40 p-3 text-sm sm:col-span-2">
@@ -912,12 +1028,13 @@ export default function Vendas() {
                 <TableHead>Pagamento</TableHead>
                 <TableHead>Data</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Distrato</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {(vendas as any[]).map((v) => (
-                <TableRow key={v.id}>
+                <TableRow key={v.id} className={v.distrato ? "opacity-60" : undefined}>
                   <TableCell className="font-mono text-xs">{v.numero_contrato}</TableCell>
                   <TableCell>
                     <div className="font-medium">{v.cliente_nome}</div>
@@ -929,19 +1046,30 @@ export default function Vendas() {
                   <TableCell>{v.tem_parceria ? v.parceria_nome ?? "—" : "—"}</TableCell>
                   <TableCell className="text-sm">
                     {(v.venda_corretores ?? []).map((p: any) => (
-                      <div key={p.id} className="whitespace-nowrap">
-                        {p.corretores?.nome}
-                        <span className="ml-1 text-xs text-muted-foreground">
-                          {formatPercent(Number(p.percentual_corretor))}
-                          {Number(p.participacao_percentual) !== 100 ? ` · ${formatPercent(Number(p.participacao_percentual))}` : ""}
-                        </span>
-                      </div>
+                      <div key={p.id} className="whitespace-nowrap">{p.corretores?.nome}</div>
                     ))}
                   </TableCell>
-                  <TableCell className="font-medium">{formatCurrency(Number(v.valor))}</TableCell>
+                  <TableCell>
+                    <div className="font-medium">{formatCurrency(Number(v.valor_venda ?? v.valor))}</div>
+                    <div className="text-xs text-muted-foreground">Contrato: {formatCurrency(Number(v.valor))}</div>
+                  </TableCell>
                   <TableCell>{FORMA_PAGAMENTO_LABELS[v.forma_pagamento] ?? v.forma_pagamento}</TableCell>
                   <TableCell>{formatDate(v.data_venda)}</TableCell>
-                  <TableCell><Badge className={statusColors[v.status]}>{v.status}</Badge></TableCell>
+                  <TableCell>
+                    {v.distrato ? (
+                      <Badge variant="destructive">Distrato</Badge>
+                    ) : (
+                      <Badge className={statusColors[v.status]}>{v.status}</Badge>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <Checkbox
+                      checked={!!v.distrato}
+                      disabled={!isGestor}
+                      onCheckedChange={() => setDistratoAlvo(v)}
+                      aria-label="Marcar distrato"
+                    />
+                  </TableCell>
                   <TableCell className="text-right whitespace-nowrap">
                     <Button variant="ghost" size="icon" onClick={() => setParcelasVenda(v)} title="Parcelas">
                       <Receipt className="h-4 w-4" />
@@ -959,7 +1087,7 @@ export default function Vendas() {
               ))}
               {vendas.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={10} className="py-8 text-center text-muted-foreground">Nenhum contrato registrado</TableCell>
+                  <TableCell colSpan={11} className="py-8 text-center text-muted-foreground">Nenhum contrato registrado</TableCell>
                 </TableRow>
               )}
             </TableBody>
@@ -994,18 +1122,11 @@ export default function Vendas() {
                   <TableCell className="whitespace-nowrap">
                     {isGestor && p.status !== "recebida" && (
                       <>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() =>
-                            atualizarParcela.mutate({
-                              id: p.id,
-                              patch: { status: "recebida", data_recebimento: new Date().toISOString().split("T")[0] },
-                            })
+                        <ReceberPopover
+                          onConfirm={(data) =>
+                            atualizarParcela.mutate({ id: p.id, patch: { status: "recebida", data_recebimento: data } })
                           }
-                        >
-                          Receber
-                        </Button>
+                        />
                         {parcelasVenda?.forma_pagamento === "financiamento" && (
                           <AdiarPopover
                             onConfirm={(dias) => {
@@ -1054,6 +1175,32 @@ export default function Vendas() {
               }}
             >
               Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!distratoAlvo} onOpenChange={(o) => !o && setDistratoAlvo(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {distratoAlvo?.distrato ? "Desfazer distrato desta venda?" : "Confirmar distrato desta venda?"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {distratoAlvo?.distrato
+                ? `O contrato ${distratoAlvo?.numero_contrato} voltará a contar em todos os relatórios.`
+                : `O contrato ${distratoAlvo?.numero_contrato} continuará na lista, mas sairá de todos os relatórios, rankings e parcelas em atraso.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (distratoAlvo) marcarDistrato.mutate({ id: distratoAlvo.id, valor: !distratoAlvo.distrato });
+                setDistratoAlvo(null);
+              }}
+            >
+              Confirmar
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

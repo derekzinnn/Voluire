@@ -110,7 +110,38 @@ export type Database = {
             referencedRelation: "vendas"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "comissoes_venda_id_fkey"
+            columns: ["venda_id"]
+            isOneToOne: true
+            referencedRelation: "vw_vgv_vendas"
+            referencedColumns: ["venda_id"]
+          },
         ]
+      }
+      configuracoes: {
+        Row: {
+          chave: string
+          created_at: string
+          descricao: string | null
+          updated_at: string
+          valor: number
+        }
+        Insert: {
+          chave: string
+          created_at?: string
+          descricao?: string | null
+          updated_at?: string
+          valor: number
+        }
+        Update: {
+          chave?: string
+          created_at?: string
+          descricao?: string | null
+          updated_at?: string
+          valor?: number
+        }
+        Relationships: []
       }
       corretor_documentos: {
         Row: {
@@ -571,6 +602,13 @@ export type Database = {
             referencedRelation: "vendas"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "venda_corretores_venda_id_fkey"
+            columns: ["venda_id"]
+            isOneToOne: false
+            referencedRelation: "vw_vgv_vendas"
+            referencedColumns: ["venda_id"]
+          },
         ]
       }
       venda_parcelas: {
@@ -624,6 +662,13 @@ export type Database = {
             referencedRelation: "vendas"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "venda_parcelas_venda_id_fkey"
+            columns: ["venda_id"]
+            isOneToOne: false
+            referencedRelation: "vw_vgv_vendas"
+            referencedColumns: ["venda_id"]
+          },
         ]
       }
       vendas: {
@@ -634,6 +679,9 @@ export type Database = {
           comissao_percentual_bruta: number
           created_at: string
           data_venda: string
+          distrato: boolean
+          distrato_em: string | null
+          distrato_por: string | null
           empreendimento_id: string | null
           forma_pagamento: string
           id: string
@@ -647,6 +695,7 @@ export type Database = {
           unidade: string
           updated_at: string
           valor: number
+          valor_venda: number | null
           vendedor_nome: string | null
         }
         Insert: {
@@ -656,6 +705,9 @@ export type Database = {
           comissao_percentual_bruta?: number
           created_at?: string
           data_venda?: string
+          distrato?: boolean
+          distrato_em?: string | null
+          distrato_por?: string | null
           empreendimento_id?: string | null
           forma_pagamento?: string
           id?: string
@@ -669,6 +721,7 @@ export type Database = {
           unidade: string
           updated_at?: string
           valor: number
+          valor_venda?: number | null
           vendedor_nome?: string | null
         }
         Update: {
@@ -678,6 +731,9 @@ export type Database = {
           comissao_percentual_bruta?: number
           created_at?: string
           data_venda?: string
+          distrato?: boolean
+          distrato_em?: string | null
+          distrato_por?: string | null
           empreendimento_id?: string | null
           forma_pagamento?: string
           id?: string
@@ -691,6 +747,7 @@ export type Database = {
           unidade?: string
           updated_at?: string
           valor?: number
+          valor_venda?: number | null
           vendedor_nome?: string | null
         }
         Relationships: [
@@ -719,7 +776,75 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      vw_vgv_corretor: {
+        Row: {
+          corretor_id: string | null
+          data_venda: string | null
+          fatia: number | null
+          venda_id: string | null
+          vgv_a_receber: number | null
+          vgv_quitado: number | null
+          vgv_realizado: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "venda_corretores_corretor_id_fkey"
+            columns: ["corretor_id"]
+            isOneToOne: false
+            referencedRelation: "corretores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "venda_corretores_venda_id_fkey"
+            columns: ["venda_id"]
+            isOneToOne: false
+            referencedRelation: "vendas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "venda_corretores_venda_id_fkey"
+            columns: ["venda_id"]
+            isOneToOne: false
+            referencedRelation: "vw_vgv_vendas"
+            referencedColumns: ["venda_id"]
+          },
+        ]
+      }
+      vw_vgv_parcelas: {
+        Row: {
+          data_recebimento: string | null
+          parcela_id: string | null
+          valor_parcela: number | null
+          venda_id: string | null
+          vgv_quitado: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "venda_parcelas_venda_id_fkey"
+            columns: ["venda_id"]
+            isOneToOne: false
+            referencedRelation: "vendas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "venda_parcelas_venda_id_fkey"
+            columns: ["venda_id"]
+            isOneToOne: false
+            referencedRelation: "vw_vgv_vendas"
+            referencedColumns: ["venda_id"]
+          },
+        ]
+      }
+      vw_vgv_vendas: {
+        Row: {
+          data_venda: string | null
+          venda_id: string | null
+          vgv_a_receber: number | null
+          vgv_quitado: number | null
+          vgv_realizado: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       can_manage_corretor: { Args: { p_corretor_id: string }; Returns: boolean }

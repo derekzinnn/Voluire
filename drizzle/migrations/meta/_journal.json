@@ -71,6 +71,13 @@
       "when": 1789390889293,
       "tag": "0009_logs_detalhados",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1790521219250,
+      "tag": "0010_fase1_valor_venda_distrato_vgv",
+      "breakpoints": true
     }
   ]
 }
