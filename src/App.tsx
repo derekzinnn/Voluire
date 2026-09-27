@@ -8,6 +8,7 @@ import AppLayout from "@/components/AppLayout";
 import Auth from "@/pages/Auth";
 import ResetPassword from "@/pages/ResetPassword";
 import Dashboard from "@/pages/Dashboard";
+import Fechamento from "@/pages/Fechamento";
 import Vendas from "@/pages/Vendas";
 import Corretores from "@/pages/Corretores";
 import Empreendimentos from "@/pages/Empreendimentos";
@@ -44,6 +45,7 @@ function AppRoutes() {
     <AppLayout>
       <Routes>
         <Route path="/" element={<Dashboard />} />
+        <Route path="/fechamento" element={<Fechamento />} />
         <Route path="/vendas" element={<Vendas />} />
         <Route path="/corretores" element={<Corretores />} />
         <Route path="/corretores/:id" element={<CorretorDetalhe />} />

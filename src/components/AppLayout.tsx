@@ -3,7 +3,7 @@ import { Link, useLocation, Navigate } from "react-router-dom";
 import logo from "@/assets/logo.jpg";
 import {
   LayoutDashboard, ShoppingCart, Users,
-  Wallet, Menu, X, LogOut, Settings, Building, Bell, ScrollText
+  Wallet, ClipboardCheck, Menu, X, LogOut, Settings, Building, Bell, ScrollText
 } from "lucide-react";
 import { registrarLog } from "@/lib/logs";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,7 @@ import ParcelasVencidasDialog, { useParcelasVencidasCount } from "@/components/P
 
 const navItems = [
   { to: "/", icon: LayoutDashboard, label: "Dashboard" },
+  { to: "/fechamento", icon: ClipboardCheck, label: "Fechamento" },
   { to: "/vendas", icon: ShoppingCart, label: "Vendas" },
   { to: "/corretores", icon: Users, label: "Corretores" },
   
