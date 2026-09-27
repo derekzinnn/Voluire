@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { UserCheck, Shield, Link2, Unlink, Trash2 } from "lucide-react";
+import { UserCheck, Shield, Link2, Unlink, Trash2, Power } from "lucide-react";
 import { ROLE_LABELS, ROLES_CONFIGURAVEIS, useUserRole, type AppRole } from "@/hooks/useUserRole";
 import DefinirSenhaDialog from "@/components/DefinirSenhaDialog";
 import CargosPermissoesManager from "@/components/CargosPermissoesManager";
@@ -36,7 +36,7 @@ export default function GestaoUsuarios() {
   const { data: users = [] } = useQuery({
     queryKey: ["list-users"],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc("list_users");
+      const { data, error } = await supabase.rpc("list_users_status" as any);
       if (error) throw error;
       return data || [];
     },
@@ -83,6 +83,19 @@ export default function GestaoUsuarios() {
       queryClient.invalidateQueries({ queryKey: ["corretores"] });
       toast({ title: "Vínculo removido" });
     },
+  });
+
+  const ativoMutation = useMutation({
+    mutationFn: async ({ userId, ativo }: { userId: string; ativo: boolean }) => {
+      const { data, error } = await supabase.functions.invoke("admin-set-user-active", { body: { user_id: userId, ativo } });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+    },
+    onSuccess: (_d, v) => {
+      ["list-users", "list-users-status", "corretores"].forEach((k) => queryClient.invalidateQueries({ queryKey: [k] }));
+      toast({ title: v.ativo ? "Usuário reativado" : "Usuário desativado", description: v.ativo ? undefined : "O histórico foi mantido." });
+    },
+    onError: (err: any) => toast({ title: "Erro", description: err?.message, variant: "destructive" }),
   });
 
   const excluirMutation = useMutation({
@@ -171,7 +184,14 @@ export default function GestaoUsuarios() {
 
                 return (
                   <TableRow key={user.id}>
-                    <TableCell className="font-medium">{user.email}</TableCell>
+                    <TableCell className="font-medium">
+                      <div className="flex flex-wrap items-center gap-2">
+                        {user.email}
+                        {user.banned_until && new Date(user.banned_until) > new Date()
+                          ? <Badge variant="secondary">Desativado</Badge>
+                          : !user.last_sign_in_at && <Badge variant="outline">Convite pendente</Badge>}
+                      </div>
+                    </TableCell>
                     <TableCell>
                       <Select
                         value={role || ""}
@@ -222,6 +242,17 @@ export default function GestaoUsuarios() {
                           </Badge>
                         )}
                         {isDiretor && <DefinirSenhaDialog userId={user.id} email={user.email} />}
+                        {(() => {
+                          const desativado = !!user.banned_until && new Date(user.banned_until) > new Date();
+                          return (
+                            <Button variant="ghost" size="icon" className="h-8 w-8"
+                              title={desativado ? "Reativar usuário" : "Desativar usuário"}
+                              disabled={ativoMutation.isPending}
+                              onClick={() => ativoMutation.mutate({ userId: user.id, ativo: desativado })}>
+                              <Power className={`h-4 w-4 ${desativado ? "text-emerald-600" : "text-amber-600"}`} />
+                            </Button>
+                          );
+                        })()}
                         {isDiretor && (
                           <Button
                             variant="ghost"

@@ -134,3 +134,18 @@
 
 ## Próximo passo — Fase 5
 - Cadastrar metas reais; preencher datas de pagamento pendentes (2026/03, 2026/04) e conferir 2016/02 e 2026/01; remover `dashboard_mensal` e `ranking_corretores`.
+
+## Fase 5 — Corretores e Gestão de Usuários — CONCLUÍDA
+- Cargos: "Gestão" = enum `gerente` (só o rótulo mudou), Financeiro, Administrativo, Corretor, Diretor/admin (tudo).
+- Permissões padrão ficam só em `role_permissions` (ajustáveis na aba Cargos e permissões). Novas chaves: `fechamento.ver_todos`, `rankings.ver`.
+  - Gestão: tudo. Financeiro: dashboard, vendas (ver/editar), financeiro, parcelas em atraso, fechamento de todos, sem usuários/rankings. Administrativo: vendas, imóveis, corretores (cadastrar/editar), sem financeiro/rankings/fechamento. Corretor: só o próprio.
+- Menu/rotas (`canAccessPage`) usam só permissões — removidos atalhos por cargo `gerente`. RLS já usa `has_permission`; `fechamento_is_gestao()` = `fechamento.ver_todos`. Sino/parcelas em atraso = `financeiro.ver`.
+- Convite: `invite-corretor` (permite `usuarios.gerenciar`) cria o login, vincula à ficha e envia o e-mail para o usuário criar a senha. Status em Corretores: Não convidado / Convite pendente (nunca entrou) / Ativo / Desativado, com reenviar convite. Fonte: `list_users_status()`.
+- Desativar sem apagar: função `admin-set-user-active` (bloqueia o login, marca a ficha como inativa, registra log); reativação pelo mesmo botão.
+- Editar corretor: `NovoCorretorDialog` com prop `corretor` (mesmo formulário, pré-preenchido).
+- VGV de carreira: `corretor_vgv_historico(uuid)` (views `vw_vgv_*`, respeita `can_view_corretor`) → `src/components/corretor/VgvHistorico.tsx` na aba Desempenho.
+- Arquivos: `drizzle/migrations/0014_fase5_permissoes_usuarios.sql`, `supabase/functions/admin-set-user-active`, `supabase/functions/invite-corretor`, `src/hooks/useUserRole.tsx`, `src/pages/Corretores.tsx`, `src/pages/GestaoUsuarios.tsx`, `src/pages/Fechamento.tsx`, `src/pages/CorretorDetalhe.tsx`, `src/components/NovoCorretorDialog.tsx`, `src/components/VincularUsuarioDialog.tsx`, `src/components/ParcelasVencidasDialog.tsx`, `src/components/AppLayout.tsx`.
+- Teste por cargo: validado por leitura das regras; teste em runtime com login de cada cargo ainda pendente (não há contas de Financeiro/Administrativo/Gestão).
+
+## Próximo passo — Fase 6
+- Criar uma conta de cada cargo e validar em runtime; cadastrar metas; completar datas de pagamento pendentes; remover `dashboard_mensal` e `ranking_corretores`.
