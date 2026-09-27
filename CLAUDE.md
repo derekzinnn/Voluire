@@ -74,3 +74,30 @@
 - Conciliação de VGV: 45 vendas ativas e R$ 11.720.846,61 em 2026 no banco; o cartão "VGV 2026" do dashboard exibe exatamente esse valor (verificado no navegador com sessão real de diretor).
 - Abas da ficha renderizadas no navegador; histórico mostra splits distintos (45% e 51%) na mesma corretora, confirmando o congelamento por venda.
 - Mascaramento de CPF para gerente é garantido no banco (política de SELECT + função), mas ainda NÃO foi validado em runtime com login de gerente.
+
+## Fase 1 — Base de dados de vendas — CONCLUÍDA
+
+### Como estava
+- `vendas.valor` era o único valor (preço do imóvel) e alimentava tudo. Comissão = `valor × comissao_percentual_bruta` (trigger `recalc_comissao_venda` → `comissoes`).
+- Venda com 2 corretores: uma linha por corretor em `venda_corretores` (`participacao_percentual` = % da comissão de cada um).
+- `venda_parcelas` somam o valor do contrato (não a comissão). Distrato era só `status = 'distrato'`.
+
+### Decisões
+- `vendas.valor` = **Valor do Contrato** (registro + base da comissão, fora dos relatórios). Nova coluna `vendas.valor_venda` = **Valor de Venda / VGV**, único valor dos relatórios. Backfill = `valor` (6 vendas, nenhuma pendente).
+- Sugestão no formulário: `valor_venda = comissão cobrada ÷ taxa padrão`, editável. Taxa padrão em `configuracoes.taxa_comissao_padrao` (6), só diretor altera.
+- VGV quitado por parcela = `valor_venda × valor_parcela ÷ soma das parcelas`, na data do pagamento. Equivale à fórmula "parcela ÷ comissão total" porque as parcelas aqui representam o contrato inteiro.
+- Fonte única: views `vw_vgv_vendas`, `vw_vgv_parcelas`, `vw_vgv_corretor` (security_invoker → respeitam RLS). Todas excluem distrato.
+- Fatia do corretor no VGV = participação ÷ soma das participações da venda (1 corretor = 100%; 25% + 22,5% = 52,6% / 47,4%).
+- Distrato: `vendas.distrato`, `distrato_em`, `distrato_por`. Trigger `trg_vendas_fase1` sincroniza `status` (marca → 'distrato'; desmarca → 'ativa' ou 'quitada'), assim telas antigas que filtram `status <> 'distrato'` continuam corretas.
+- Exclusão de venda: hard delete; parcelas, comissões e corretores caem juntos por `ON DELETE CASCADE`.
+- Datas retroativas liberadas; "Receber" pede a data do pagamento (sem padrão de hoje). Parcelas podem ser salvas já pagas com data informada; venda "Quitada" exige datas de pagamento.
+
+### Arquivos
+- Migração `drizzle/migrations/0010_fase1_valor_venda_distrato_vgv.sql`.
+- Teste `supabase/tests/vgv_quitado_exemplos.sql` (Exemplos A e B, com ROLLBACK). Resultado: A = 25.000 por parcela paga; B = 66.666,67.
+- `src/pages/Vendas.tsx`, `src/lib/vendas.ts`, `src/components/ParcelasVencidasDialog.tsx`.
+- Funções reescritas sobre as views: `resumo_dashboard_anual`, `ranking_periodo`, `totais_empresa`.
+
+## Próximo passo — Fase 2: Dashboard
+- Ajustar layout do Dashboard ao VGV quitado por data de pagamento (hoje "a receber" mensal pode ficar negativo num mês em que se recebe venda de mês anterior).
+- `dashboard_mensal` e `ranking_corretores` não são usadas pela interface; migrar para as views ou remover.

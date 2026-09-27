@@ -1,0 +1,1 @@
+- VGV (realizado/quitado/a receber) só é calculado nas views vw_vgv_*; relatórios leem delas. Why: fonte única, distrato excluído num só lugar.
