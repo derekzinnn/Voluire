@@ -124,6 +124,7 @@ export default function ParcelasVencidasDialog({ open, onOpenChange }: Props = {
 
   if (loading || !isGestor) return null;
   if (controlado ? !open : fila.length === 0 || fechado) return null;
+  if (!controlado) sessionStorage.setItem("aviso-atraso-visto", "1");
 
 
   function confirmarPaga(p: any) {
