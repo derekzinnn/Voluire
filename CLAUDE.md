@@ -149,3 +149,13 @@
 
 ## Próximo passo — Fase 6
 - Criar uma conta de cada cargo e validar em runtime; cadastrar metas; completar datas de pagamento pendentes; remover `dashboard_mensal` e `ranking_corretores`.
+
+## Fase 6 — Imóveis — CONCLUÍDA
+- "Empreendimentos" virou "Imóveis": menu, título e rota `/imoveis`; `/empreendimentos` redireciona para `/imoveis`. A permissão `empreendimentos.gerenciar` foi mantida (rótulo "Gerenciar imóveis").
+- Imóvel pronto = linha em `empreendimentos` com `tipo = 'pronto'` (mesma tabela, então aparece no seletor da venda e cai na regra de agenciador que já existia). Colunas novas, opcionais: `rua`, `numero`, `complemento`, `condominio`, `bairro`, `cidade`. Rua e número são obrigatórios no formulário.
+- `nome` do imóvel pronto é gravado como "Rua, Número – Complemento (Condomínio)" (`nomeImovelPronto` em `src/lib/vendas.ts`), por isso a lista de vendas e o seletor não precisaram mudar.
+- Lista única com selo (Empreendimento / Imóvel Pronto) e filtro. Os empreendimentos e vendas existentes não foram alterados (só colunas novas adicionadas).
+- Arquivos: `drizzle/migrations/0015_fase6_imoveis_prontos.sql`, `src/pages/Imoveis.tsx` (substitui `Empreendimentos.tsx`), `src/lib/vendas.ts`, `src/App.tsx`, `src/components/AppLayout.tsx`, `src/hooks/useUserRole.tsx`, `src/pages/Vendas.tsx`.
+
+## Próximo passo (pós-fases)
+- Criar uma conta de cada cargo e validar o acesso em runtime; cadastrar metas; completar as datas de pagamento pendentes (2026/03, 2026/04; conferir 2016/02 e 2026/01); remover `dashboard_mensal` e `ranking_corretores`; publicar.
