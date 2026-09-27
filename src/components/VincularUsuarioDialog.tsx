@@ -88,6 +88,7 @@ export default function VincularUsuarioDialog({ triggerLabel = "Vincular usuári
           equipe_id: equipeId === SEM_EQUIPE ? null : equipeId,
           corretor_id_existente: semFicha ? null : corretorId,
           criar_corretor: false,
+          redirect_to: `${window.location.origin}/reset-password`,
         },
       });
       if (error) throw error;
@@ -99,7 +100,8 @@ export default function VincularUsuarioDialog({ triggerLabel = "Vincular usuári
         queryClient.invalidateQueries({ queryKey: [k] })
       );
       setResultado({ email, password: data.tempPassword, userId: data.userId });
-      toast({ title: "Acesso criado e vinculado!" });
+      if (data?.conviteEnviado) setLinkEnviado(true);
+      toast({ title: "Acesso criado e vinculado!", description: data?.conviteEnviado ? `Convite enviado para ${email}.` : undefined });
     },
     onError: (e: any) => toast({ title: "Nada foi vinculado", description: e.message, variant: "destructive" }),
   });

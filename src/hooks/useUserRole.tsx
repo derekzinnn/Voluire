@@ -6,7 +6,7 @@ export type AppRole = "diretor" | "gerente" | "corretor" | "financeiro" | "admin
 
 export const ROLE_LABELS: Record<string, string> = {
   diretor: "Diretor",
-  gerente: "Gerente",
+  gerente: "Gestão",
   corretor: "Corretor",
   financeiro: "Financeiro",
   administrativo: "Administrativo",
@@ -30,6 +30,8 @@ export const PERMISSOES: { key: string; label: string; descricao: string }[] = [
   { key: "corretores.gerenciar", label: "Cadastrar e editar corretores", descricao: "Cria e altera fichas de corretor" },
   
   { key: "empreendimentos.gerenciar", label: "Gerenciar empreendimentos", descricao: "Cadastra empreendimentos e imóveis" },
+  { key: "fechamento.ver_todos", label: "Fechamento de todos", descricao: "Vê o fechamento de todos os corretores" },
+  { key: "rankings.ver", label: "Ver rankings", descricao: "Vê rankings de premiação no Fechamento" },
   { key: "usuarios.gerenciar", label: "Gerenciar usuários e cargos", descricao: "Convida usuários e altera permissões" },
 ];
 
@@ -134,13 +136,13 @@ export function canAccessPage(role: AppRole | null, page: string, permissions: s
   // Ficha do corretor: acesso governado por can_view_corretor no banco
   if (page.startsWith("/corretores/")) return true;
 
-  if (page === "/") return role === "gerente" || role === "corretor" || has("dashboard.ver");
-  if (page === "/fechamento") return role === "gerente" || role === "corretor" || has("dashboard.ver") || has("financeiro.ver");
-  if (page === "/vendas") return role === "gerente" || role === "corretor" || has("vendas.ver_todas") || has("vendas.gerenciar");
-  if (page === "/corretores") return role === "gerente" || has("corretores.ver_todos") || has("corretores.gerenciar");
-  if (page === "/financeiro") return role === "gerente" || has("financeiro.ver") || has("financeiro.gerenciar");
+  if (page === "/") return role === "corretor" || has("dashboard.ver");
+  if (page === "/fechamento") return role === "corretor" || has("fechamento.ver_todos");
+  if (page === "/vendas") return role === "corretor" || has("vendas.ver_todas") || has("vendas.gerenciar");
+  if (page === "/corretores") return has("corretores.ver_todos") || has("corretores.gerenciar");
+  if (page === "/financeiro") return has("financeiro.ver") || has("financeiro.gerenciar");
   
-  if (page === "/empreendimentos") return role === "gerente" || has("empreendimentos.gerenciar");
+  if (page === "/empreendimentos") return has("empreendimentos.gerenciar");
   if (page === "/minha-equipe") return role === "gerente";
   if (page === "/gestao-usuarios") return has("usuarios.gerenciar");
   if (page === "/logs") return false; // histórico do sistema: só diretor
