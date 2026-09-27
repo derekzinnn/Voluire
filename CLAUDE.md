@@ -163,6 +163,11 @@
 ## Ajustes de QA (pós-fases)
 - Aviso "Parcelas em atraso": não abre mais sozinho em toda página. Lembrete automático só no Dashboard, uma vez por sessão (`sessionStorage` `aviso-atraso-visto`); o sino da barra lateral abre sob demanda. Arquivos: `src/components/AppLayout.tsx`, `src/components/ParcelasVencidasDialog.tsx`.
 - VGV de carreira do corretor: já existia na ficha (aba Desempenho, `VgvHistorico` via `corretor_vgv_historico`), com total e ano a ano (realizado/quitado, sem distrato). Sem mudança.
+- Investigação do VGV Quitado por período (27/09/2026): o filtro não é a causa. Dashboard (`BlocosMeta` e `resumo_dashboard_anual`) e Fechamento (`fechamento_corretores`/`fechamento_totais`, inclusive rankings) já usam `vw_vgv_parcelas.data_recebimento`; a view só inclui parcela `recebida`, com `data_recebimento` preenchida e venda sem distrato.
+  - Contrato 2016/02, parcela 1, João Victor: R$ 220.000,00, `data_recebimento = 22/09/2026`.
+  - Contrato 2026/01, parcela 1, Lurian: R$ 182.990,00, `data_recebimento = 22/09/2026`.
+  - Nos dois registros a data coincide com `created_at::date`, indicando carga histórica com a data de cadastro no lugar da data real do pagamento. Por isso setembro soma R$ 402.990,00; janeiro soma R$ 0,00. Não alterar o filtro nem inventar janeiro: corrigir os dados somente após o cliente informar as datas reais.
+  - Contratos 2026/03 e 2026/04 continuam com status `recebida` e `data_recebimento = NULL`; não entram em nenhum período até a data real ser preenchida.
 - DECISÃO PENDENTE (cliente) — VGV do corretor diverge entre telas:
   - Corretores (`src/pages/Corretores.tsx` linha ~108) soma `fetchVendasPorCorretor().valor` = VGV × `participacao_percentual`/100 (o % de comissão, ex. 50%) → Janine R$ 110.495.
   - Fechamento usa `vw_vgv_corretor.fatia` = participação ÷ soma das participações da venda (1 corretor = 100%) → R$ 220.990.
@@ -171,4 +176,4 @@
   - Nenhuma das telas foi alterada até a confirmação.
 
 ## Próximo passo
-- Confirmar com o cliente a regra do VGV do corretor e aplicar; demais pendências acima (contas por cargo, metas, datas de pagamento, publicar).
+- Obter e corrigir as datas reais de pagamento dos contratos 2016/02, 2026/01, 2026/03 e 2026/04; então repetir a conciliação mensal do VGV Quitado. Confirmar também a regra do VGV do corretor e aplicar; demais pendências acima (contas por cargo, metas, publicar).
