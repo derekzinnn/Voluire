@@ -73,7 +73,9 @@ export default function ParcelasVencidasDialog({ open, onOpenChange }: Props = {
   const [pagina, setPagina] = useState(0);
   const [novaData, setNovaData] = useState<string>("");
   const [dias, setDias] = useState("30");
-  const [fechado, setFechado] = useState(false);
+  // Lembrete automático: só uma vez por sessão (o sino abre sob demanda).
+  const [fechado, setFechadoState] = useState(() => sessionStorage.getItem("aviso-atraso-visto") === "1");
+  const setFechado = (v: boolean) => { if (v) sessionStorage.setItem("aviso-atraso-visto", "1"); setFechadoState(v); };
   const controlado = open !== undefined;
 
 
@@ -122,6 +124,7 @@ export default function ParcelasVencidasDialog({ open, onOpenChange }: Props = {
 
   if (loading || !isGestor) return null;
   if (controlado ? !open : fila.length === 0 || fechado) return null;
+  if (!controlado) sessionStorage.setItem("aviso-atraso-visto", "1");
 
 
   function confirmarPaga(p: any) {

@@ -137,7 +137,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           {children}
         </main>
       </div>
-      <ParcelasVencidasDialog />
+      {(location.pathname === "/" || location.pathname === "/dashboard") && <ParcelasVencidasDialog />}
       <ParcelasVencidasDialog open={avisosOpen} onOpenChange={setAvisosOpen} />
 
     </div>

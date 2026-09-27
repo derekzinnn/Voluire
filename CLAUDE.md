@@ -159,3 +159,16 @@
 
 ## Próximo passo (pós-fases)
 - Criar uma conta de cada cargo e validar o acesso em runtime; cadastrar metas; completar as datas de pagamento pendentes (2026/03, 2026/04; conferir 2016/02 e 2026/01); remover `dashboard_mensal` e `ranking_corretores`; publicar.
+
+## Ajustes de QA (pós-fases)
+- Aviso "Parcelas em atraso": não abre mais sozinho em toda página. Lembrete automático só no Dashboard, uma vez por sessão (`sessionStorage` `aviso-atraso-visto`); o sino da barra lateral abre sob demanda. Arquivos: `src/components/AppLayout.tsx`, `src/components/ParcelasVencidasDialog.tsx`.
+- VGV de carreira do corretor: já existia na ficha (aba Desempenho, `VgvHistorico` via `corretor_vgv_historico`), com total e ano a ano (realizado/quitado, sem distrato). Sem mudança.
+- DECISÃO PENDENTE (cliente) — VGV do corretor diverge entre telas:
+  - Corretores (`src/pages/Corretores.tsx` linha ~108) soma `fetchVendasPorCorretor().valor` = VGV × `participacao_percentual`/100 (o % de comissão, ex. 50%) → Janine R$ 110.495.
+  - Fechamento usa `vw_vgv_corretor.fatia` = participação ÷ soma das participações da venda (1 corretor = 100%) → R$ 220.990.
+  - Regra "fatia proporcional entre corretores": Corretores passa a somar `Number(v.valor_venda) * fatia` (ler de `vw_vgv_corretor`). Fechamento já está assim.
+  - Regra "VGV cheio para cada corretor": na view `vw_vgv_corretor`, `fatia` = 1; em Corretores, somar `Number(v.valor_venda)`.
+  - Nenhuma das telas foi alterada até a confirmação.
+
+## Próximo passo
+- Confirmar com o cliente a regra do VGV do corretor e aplicar; demais pendências acima (contas por cargo, metas, datas de pagamento, publicar).
