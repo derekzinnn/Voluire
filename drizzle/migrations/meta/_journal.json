@@ -99,6 +99,13 @@
       "when": 1790522047551,
       "tag": "0013_fase4_fechamento",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1790522242871,
+      "tag": "0014_fase5_permissoes_usuarios",
+      "breakpoints": true
     }
   ]
 }

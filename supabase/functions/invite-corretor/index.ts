@@ -51,13 +51,9 @@ Deno.serve(async (req) => {
     const { data: { user: caller } } = await userClient.auth.getUser();
     if (!caller) return json({ error: "Não autorizado" }, 401);
 
-    const { data: roleData } = await userClient
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", caller.id)
-      .maybeSingle();
-    if (roleData?.role !== "diretor") {
-      return json({ error: "Apenas diretores podem cadastrar usuários" }, 403);
+    const { data: pode } = await userClient.rpc("has_permission", { _permission: "usuarios.gerenciar" });
+    if (!pode) {
+      return json({ error: "Sem permissão para cadastrar usuários" }, 403);
     }
 
     const body = await req.json();
@@ -180,7 +176,16 @@ Deno.serve(async (req) => {
       if (error) throw error;
     }
 
-    return json({ success: true, tempPassword, userId, corretorId });
+    // 7. Convite por e-mail: link para o próprio usuário cadastrar a senha
+    let conviteEnviado = false;
+    const redirectTo = clean(body.redirect_to);
+    if (redirectTo) {
+      const anon = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!);
+      const { error } = await anon.auth.resetPasswordForEmail(email, { redirectTo });
+      conviteEnviado = !error;
+    }
+
+    return json({ success: true, tempPassword, userId, corretorId, conviteEnviado });
   } catch (err) {
     await rollback();
     const message = err instanceof Error ? err.message : String(err);

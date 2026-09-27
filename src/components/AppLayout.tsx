@@ -100,7 +100,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
         </nav>
         <div className="p-4 border-t border-sidebar-border space-y-1">
-          {isGestor && (
+          {can("financeiro.ver") && (
             <Button
               variant="ghost"
               className="w-full justify-start gap-3 text-sidebar-foreground/70 hover:text-sidebar-foreground"

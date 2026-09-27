@@ -36,7 +36,7 @@ function addSkip(id: string) {
 
 export function useParcelasVencidas() {
   const { can, loading } = useUserRole();
-  const isGestor = can("vendas.gerenciar");
+  const isGestor = can("financeiro.ver");
   return useQuery({
     queryKey: ["parcelas-vencidas"],
     enabled: !loading && isGestor,
@@ -64,7 +64,7 @@ type Props = { open?: boolean; onOpenChange?: (v: boolean) => void };
 
 export default function ParcelasVencidasDialog({ open, onOpenChange }: Props = {}) {
   const { can, loading } = useUserRole();
-  const isGestor = can("vendas.gerenciar");
+  const isGestor = can("financeiro.ver");
   const { toast } = useToast();
   const navigate = useNavigate();
   const queryClient = useQueryClient();

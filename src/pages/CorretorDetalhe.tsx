@@ -13,6 +13,7 @@ import PerfilTab from "@/components/corretor/PerfilTab";
 import EquipeTab from "@/components/corretor/EquipeTab";
 
 import DesempenhoTab from "@/components/corretor/DesempenhoTab";
+import VgvHistorico from "@/components/corretor/VgvHistorico";
 import { useFotoUrl } from "@/components/corretor/useFotoUrl";
 
 function iniciais(nome: string) {
@@ -28,9 +29,9 @@ function iniciais(nome: string) {
 export default function CorretorDetalhe() {
   const { id = "" } = useParams();
   const navigate = useNavigate();
-  const { corretorId, isGestor, isDiretor, loading: roleLoading } = useUserRole();
+  const { corretorId, can, isDiretor, loading: roleLoading } = useUserRole();
 
-  const podeGerenciar = isGestor;
+  const podeGerenciar = can("corretores.gerenciar");
   const ehProprio = corretorId === id;
 
   const { data: corretor, isLoading } = useQuery({
@@ -152,7 +153,8 @@ export default function CorretorDetalhe() {
           />
 
         </TabsContent>
-        <TabsContent value="desempenho" className="mt-4">
+        <TabsContent value="desempenho" className="mt-4 space-y-4">
+          <VgvHistorico corretorId={id} />
           <DesempenhoTab corretorId={id} />
         </TabsContent>
       </Tabs>

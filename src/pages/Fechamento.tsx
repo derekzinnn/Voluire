@@ -112,8 +112,9 @@ function Totalizador({ label, valor, cls }: { label: string; valor: number; cls?
 
 export default function Fechamento() {
   const hoje = hojeSP();
-  const { role } = useUserRole();
-  const gestao = role !== "corretor";
+  const { can } = useUserRole();
+  const gestao = can("fechamento.ver_todos");
+  const verRankings = can("rankings.ver");
   const anos = anosDisponiveis(hoje.ano);
 
   const [tipo, setTipo] = useState<Tipo>("mes");
@@ -243,7 +244,7 @@ export default function Fechamento() {
         </CardContent>
       </Card>
 
-      {gestao && (
+      {verRankings && (
         <div className="grid gap-4 md:grid-cols-2">
           <Ranking titulo={`Realizado · ${rotulo("mes", ano, mes)}`} itens={ranquear(vMes.data?.linhas ?? [], "realizado")} />
           <Ranking titulo={`Quitado · ${rotulo("mes", ano, mes)}`} itens={ranquear(vMes.data?.linhas ?? [], "quitado")} />
