@@ -20,7 +20,7 @@ const navItems = [
   { to: "/vendas", icon: ShoppingCart, label: "Vendas" },
   { to: "/corretores", icon: Users, label: "Corretores" },
   
-  { to: "/empreendimentos", icon: Building, label: "Empreendimentos" },
+  { to: "/imoveis", icon: Building, label: "Imóveis" },
   { to: "/financeiro", icon: Wallet, label: "Financeiro" },
   
   { to: "/gestao-usuarios", icon: Settings, label: "Gestão Usuários", group: "Gestão" },

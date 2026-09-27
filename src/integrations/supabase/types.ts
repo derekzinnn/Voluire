@@ -345,26 +345,44 @@ export type Database = {
       }
       empreendimentos: {
         Row: {
+          bairro: string | null
+          cidade: string | null
+          complemento: string | null
+          condominio: string | null
           created_at: string
           descricao: string | null
           id: string
           nome: string
+          numero: string | null
+          rua: string | null
           tipo: string
           updated_at: string
         }
         Insert: {
+          bairro?: string | null
+          cidade?: string | null
+          complemento?: string | null
+          condominio?: string | null
           created_at?: string
           descricao?: string | null
           id?: string
           nome: string
+          numero?: string | null
+          rua?: string | null
           tipo?: string
           updated_at?: string
         }
         Update: {
+          bairro?: string | null
+          cidade?: string | null
+          complemento?: string | null
+          condominio?: string | null
           created_at?: string
           descricao?: string | null
           id?: string
           nome?: string
+          numero?: string | null
+          rua?: string | null
           tipo?: string
           updated_at?: string
         }

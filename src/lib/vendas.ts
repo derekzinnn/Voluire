@@ -47,8 +47,16 @@ export const FORMA_PAGAMENTO_LABELS: Record<string, string> = {
 };
 
 export const EMPREENDIMENTO_TIPO_LABELS: Record<string, string> = {
-  pronto: "Pronto",
+  pronto: "Imóvel Pronto",
   lancamento: "Lançamento",
   estoque: "Estoque",
   mcmv: "Minha Casa Minha Vida",
 };
+
+/** Nome exibido de um imóvel pronto: "Rua, Número – Complemento (Condomínio)". */
+export function nomeImovelPronto(i: { rua?: string | null; numero?: string | null; complemento?: string | null; condominio?: string | null }) {
+  let s = [i.rua?.trim(), i.numero?.trim()].filter(Boolean).join(", ");
+  if (i.complemento?.trim()) s += ` – ${i.complemento.trim()}`;
+  if (i.condominio?.trim()) s += ` (${i.condominio.trim()})`;
+  return s;
+}
