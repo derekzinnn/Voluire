@@ -923,6 +923,15 @@ export type Database = {
           vgv_equipe: number
         }[]
       }
+      corretor_vgv_historico: {
+        Args: { p_corretor_id: string }
+        Returns: {
+          ano: number
+          qtd_vendas: number
+          quitado: number
+          realizado: number
+        }[]
+      }
       dashboard_mensal: {
         Args: { p_ano: number }
         Returns: {
@@ -970,6 +979,16 @@ export type Database = {
           created_at: string
           email: string
           id: string
+        }[]
+      }
+      list_users_status: {
+        Args: never
+        Returns: {
+          banned_until: string
+          created_at: string
+          email: string
+          id: string
+          last_sign_in_at: string
         }[]
       }
       ranking_corretores: {
