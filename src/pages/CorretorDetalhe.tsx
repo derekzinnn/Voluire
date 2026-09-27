@@ -28,9 +28,9 @@ function iniciais(nome: string) {
 export default function CorretorDetalhe() {
   const { id = "" } = useParams();
   const navigate = useNavigate();
-  const { corretorId, isGestor, isDiretor, loading: roleLoading } = useUserRole();
+  const { corretorId, can, isDiretor, loading: roleLoading } = useUserRole();
 
-  const podeGerenciar = isGestor;
+  const podeGerenciar = can("corretores.gerenciar");
   const ehProprio = corretorId === id;
 
   const { data: corretor, isLoading } = useQuery({
