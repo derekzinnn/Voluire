@@ -33,6 +33,10 @@ export default function Corretores() {
     },
   });
 
+  const corretoresFiltrados = corretores.filter(
+    (c: any) => !busca.trim() || semAcento(c.nome || "").includes(semAcento(busca.trim()))
+  );
+
   const { can } = useUserRole();
   const podeEditar = can("corretores.gerenciar");
   const { data: usuarios = [] } = useQuery({
