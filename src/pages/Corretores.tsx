@@ -85,7 +85,16 @@ export default function Corretores() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-end">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="relative w-full max-w-xs">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+            placeholder="Buscar corretor pelo nome..."
+            className="pl-9"
+          />
+        </div>
         <div className="flex gap-2">
           <NovoCorretorDialog />
           <VincularUsuarioDialog />
