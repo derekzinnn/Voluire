@@ -177,3 +177,14 @@
 
 ## Próximo passo
 - Obter e corrigir as datas reais de pagamento dos contratos 2016/02, 2026/01, 2026/03 e 2026/04; então repetir a conciliação mensal do VGV Quitado. Confirmar também a regra do VGV do corretor e aplicar; demais pendências acima (contas por cargo, metas, publicar).
+
+## Revisão de código (30/09/2026) — CONCLUÍDA
+- Fix 1: `0016_baseline_tabelas_nao_versionadas.sql` recria (idempotente) as 9 tabelas que só existiam no banco: equipes, corretores, corretor_perfis, corretor_perfil_notas, corretor_documentos, captacoes, despesas, empreendimentos, user_roles + enum app_role, constraints, RLS, políticas, triggers. Views `vw_vgv_*`, `metas_vgv`, `valor_venda`, `distrato` e todas as funções já tinham migração (0004, 0010–0014). Limitação: num rebuild do zero a ordem histórica (supabase/migrations antigas + drizzle) precisa rodar a 0016 antes das políticas que dependem dessas tabelas.
+- Fix 2: `salvar_venda(p_id, p_venda, p_corretores, p_parcelas)` (0017, SECURITY INVOKER, só authenticated): venda + corretores + parcelas numa transação. Parcelas casadas por número; pagamento registrado é preservado se o formulário vier sem data. Prova: data 15/02/2026 mantida após edição (teste com rollback).
+- Fix 3: Fluxo de Caixa (Financeiro) = `valor_empresa × parcela ÷ soma das parcelas`, na data de pagamento; sem parcelas → `valor_empresa` na data da comissão. Set/2026: antes R$ 502.990,00 (VGV) → depois R$ 15.749,70 (comissão Voluire).
+- Fix 4: pendentes de data real: 2016/02 e 2026/01 (22/09/2026 = data de cadastro), 2026/03 e 2026/04 (sem data). Edição da venda já permite data de pagamento por parcela.
+- Fix 5: Excluir venda só para diretor; `invite-corretor` não devolve mais senha temporária (UI só envia link); `.env` no .gitignore.
+  - Autorização: criar/convidar e desativar usuários = `has_permission('usuarios.gerenciar')` (diretor, Gestão). Definir senha de outro e excluir acesso = só diretor (regra do cliente: senha só o próprio e o diretor). Mantido de propósito: unificar em `usuarios.gerenciar` afrouxaria.
+
+## Próximo passo
+- Datas reais de pagamento dos 4 contratos acima; regra do VGV do corretor; contas por cargo; metas; publicar.
