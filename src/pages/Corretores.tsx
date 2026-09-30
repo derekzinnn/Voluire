@@ -121,7 +121,7 @@ export default function Corretores() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {corretores.map((c: any) => {
+              {corretoresFiltrados.map((c: any) => {
                 const cv = vendas.filter(v => v.corretor_id === c.id && v.status !== "distrato");
                 const vgv = cv.reduce((s, v) => s + Number(v.valor), 0);
                 const acesso = statusAcesso(c);
