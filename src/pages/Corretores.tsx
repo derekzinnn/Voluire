@@ -157,8 +157,10 @@ export default function Corretores() {
                   </TableRow>
                 );
               })}
-              {corretores.length === 0 && (
-                <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">Nenhum corretor cadastrado</TableCell></TableRow>
+              {corretoresFiltrados.length === 0 && (
+                <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                  {busca.trim() ? "Nenhum corretor encontrado" : "Nenhum corretor cadastrado"}
+                </TableCell></TableRow>
               )}
             </TableBody>
           </Table>
