@@ -1046,6 +1046,15 @@ export type Database = {
           voluire: number
         }[]
       }
+      salvar_venda: {
+        Args: {
+          p_corretores: Json
+          p_id: string
+          p_parcelas: Json
+          p_venda: Json
+        }
+        Returns: string
+      }
       totais_empresa: {
         Args: { p_ano: number }
         Returns: {
