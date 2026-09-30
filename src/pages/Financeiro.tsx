@@ -40,7 +40,7 @@ export default function Financeiro() {
     queryFn: async () => {
       const { data } = await supabase
         .from("comissoes")
-        .select("valor_total, valor_corretores, valor_empresa, percentual_total, status, data_recebimento, vendas(id, numero_contrato, cliente_nome, unidade, valor, data_venda, status, distrato, forma_pagamento)");
+        .select("valor_total, valor_corretores, valor_empresa, percentual_total, status, data_recebimento, vendas(id, numero_contrato, cliente_nome, unidade, valor, valor_venda, data_venda, status, distrato, forma_pagamento)");
       return data || [];
     },
   });
@@ -150,7 +150,7 @@ export default function Financeiro() {
 
   const competenciaMensal = MESES.map((mes, i) => {
     const doMes = comissoesPorMes(i);
-    const vgv = doMes.reduce((s, c) => s + (Number((c as any).vendas?.valor) || 0), 0);
+    const vgv = doMes.reduce((s, c) => s + (Number((c as any).vendas?.valor_venda ?? (c as any).vendas?.valor) || 0), 0);
     const comissaoBruta = doMes.reduce((s, c) => s + Number((c as any).valor_total || 0), 0);
     const corretores = doMes.reduce((s, c) => s + Number((c as any).valor_corretores || 0), 0);
     const receita = doMes.reduce((s, c) => s + Number(c.valor_empresa), 0);
@@ -415,7 +415,7 @@ export default function Financeiro() {
                       <TableCell className="font-medium">{c.vendas.numero_contrato}</TableCell>
                       <TableCell>{c.vendas.cliente_nome}</TableCell>
                       <TableCell>{FORMA_PAGAMENTO_LABELS[c.vendas.forma_pagamento] ?? c.vendas.forma_pagamento}</TableCell>
-                      <TableCell className="text-right font-semibold">{formatCurrency(Number(c.vendas.valor))}</TableCell>
+                      <TableCell className="text-right font-semibold">{formatCurrency(Number(c.vendas.valor_venda ?? c.vendas.valor))}</TableCell>
                       <TableCell className="text-right">{formatCurrency(Number(c.valor_total))}</TableCell>
                       <TableCell className="text-right">{formatCurrency(Number(c.valor_corretores))}</TableCell>
                       <TableCell className="text-right text-emerald-600">{formatCurrency(Number(c.valor_empresa))}</TableCell>
