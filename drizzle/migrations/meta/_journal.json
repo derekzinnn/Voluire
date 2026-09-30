@@ -113,6 +113,13 @@
       "when": 1790522420713,
       "tag": "0015_fase6_imoveis_prontos",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1790784908500,
+      "tag": "0016_baseline_tabelas_nao_versionadas",
+      "breakpoints": true
     }
   ]
 }
