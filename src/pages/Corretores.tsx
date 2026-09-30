@@ -23,10 +23,6 @@ export default function Corretores() {
   const { toast } = useToast();
   const [busca, setBusca] = useState("");
 
-  const corretoresFiltrados = corretores.filter(
-    (c: any) => !busca.trim() || semAcento(c.nome || "").includes(semAcento(busca.trim()))
-  );
-
 
 
   const { data: corretores = [] } = useQuery({
