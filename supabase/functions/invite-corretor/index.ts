@@ -185,7 +185,8 @@ Deno.serve(async (req) => {
       conviteEnviado = !error;
     }
 
-    return json({ success: true, tempPassword, userId, corretorId, conviteEnviado });
+    // Senha temporária nunca sai da função: o acesso é criado só pelo link do e-mail.
+    return json({ success: true, userId, corretorId, conviteEnviado });
   } catch (err) {
     await rollback();
     const message = err instanceof Error ? err.message : String(err);

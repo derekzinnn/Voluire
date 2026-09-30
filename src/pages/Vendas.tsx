@@ -177,7 +177,7 @@ const emptyForm = (): FormState => ({
 export default function Vendas() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const { can } = useUserRole();
+  const { can, isDiretor } = useUserRole();
   const isGestor = can("vendas.gerenciar");
   const [open, setOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
@@ -1052,9 +1052,11 @@ export default function Vendas() {
                     {isGestor && (
                       <>
                         <Button variant="ghost" size="icon" onClick={() => abrirEdicao(v)}><Pencil className="h-4 w-4" /></Button>
-                        <Button variant="ghost" size="icon" onClick={() => setVendaParaExcluir(v.id)}>
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
+                        {isDiretor && (
+                          <Button variant="ghost" size="icon" onClick={() => setVendaParaExcluir(v.id)}>
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        )}
                       </>
                     )}
                   </TableCell>
