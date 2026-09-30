@@ -12,8 +12,6 @@ import { useUserRole } from "@/hooks/useUserRole";
 import PerfilTab from "@/components/corretor/PerfilTab";
 import EquipeTab from "@/components/corretor/EquipeTab";
 
-import DesempenhoTab from "@/components/corretor/DesempenhoTab";
-import VgvHistorico from "@/components/corretor/VgvHistorico";
 import { useFotoUrl } from "@/components/corretor/useFotoUrl";
 
 function iniciais(nome: string) {
@@ -131,8 +129,6 @@ export default function CorretorDetalhe() {
         <TabsList className="flex-wrap">
           <TabsTrigger value="ficha">Ficha</TabsTrigger>
           <TabsTrigger value="equipe">Equipe</TabsTrigger>
-          
-          <TabsTrigger value="desempenho">Desempenho</TabsTrigger>
         </TabsList>
 
         <TabsContent value="ficha" className="mt-4">
@@ -151,11 +147,6 @@ export default function CorretorDetalhe() {
             splitAtual={Number(corretor.comissao_percentual)}
             podeGerenciar={podeGerenciar}
           />
-
-        </TabsContent>
-        <TabsContent value="desempenho" className="mt-4 space-y-4">
-          <VgvHistorico corretorId={id} />
-          <DesempenhoTab corretorId={id} />
         </TabsContent>
       </Tabs>
     </div>
