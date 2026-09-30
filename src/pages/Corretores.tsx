@@ -21,6 +21,11 @@ const semAcento = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, 
 export default function Corretores() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const [busca, setBusca] = useState("");
+
+  const corretoresFiltrados = corretores.filter(
+    (c: any) => !busca.trim() || semAcento(c.nome || "").includes(semAcento(busca.trim()))
+  );
 
 
 
