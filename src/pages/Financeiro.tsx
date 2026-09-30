@@ -89,10 +89,15 @@ export default function Financeiro() {
   const filteredEmpresa = despesas.filter(d => d.tipo === "empresa" && d.mes.toString() === filtroMes);
   const totalEmpresa = filteredEmpresa.reduce((s, d) => s + Number(d.valor), 0);
 
-  // === Fluxo de Caixa: entradas efetivadas (valor total) x Despesas ===
-  // Cada parcela recebida entra com seu valor integral no mês do recebimento.
-  // Vendas sem parcelas cadastradas usam a data de recebimento da comissão.
+  // === Fluxo de Caixa: comissão da Voluire efetivamente recebida x Despesas ===
+  // Cada parcela recebida traz a fatia proporcional da comissão da Voluire
+  // (valor_empresa × parcela ÷ soma das parcelas), na data real do pagamento.
+  // Vendas sem parcelas usam a data de recebimento da comissão.
   const vendasComParcelas = new Set(parcelas.map((p: any) => p.venda_id));
+  const totalParcelasVenda = new Map<string, number>();
+  parcelas.forEach((p: any) => totalParcelasVenda.set(p.venda_id, (totalParcelasVenda.get(p.venda_id) ?? 0) + Number(p.valor)));
+  const empresaPorVenda = new Map<string, number>();
+  comissoes.forEach((c: any) => c.vendas?.id && empresaPorVenda.set(c.vendas.id, Number(c.valor_empresa) || 0));
 
   const fluxoMensal = MESES.map((mes, i) => {
     const porParcelas = parcelas
@@ -102,7 +107,10 @@ export default function Financeiro() {
         const d = parseLocalDate(p.data_recebimento);
         return d?.getMonth() === i && d.getFullYear() === anoNum;
       })
-      .reduce((s: number, p: any) => s + Number(p.valor), 0);
+      .reduce((s: number, p: any) => {
+        const tot = totalParcelasVenda.get(p.venda_id) || 0;
+        return tot > 0 ? s + (empresaPorVenda.get(p.venda_id) ?? 0) * Number(p.valor) / tot : s;
+      }, 0);
 
     const porComissao = comissoes
       .filter((c: any) => {
@@ -112,7 +120,7 @@ export default function Financeiro() {
         const d = parseLocalDate(c.data_recebimento);
         return d?.getMonth() === i && d.getFullYear() === anoNum;
       })
-      .reduce((s: number, c: any) => s + Number(c.valor_total), 0);
+      .reduce((s: number, c: any) => s + Number(c.valor_empresa), 0);
 
     const faturamento = porParcelas + porComissao;
 
