@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -5,18 +6,22 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { formatCurrency, formatPercent } from "@/lib/format";
-import { Trash2, IdCard } from "lucide-react";
+import { Trash2, IdCard, Search } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import NovoCorretorDialog from "@/components/NovoCorretorDialog";
 import VincularUsuarioDialog from "@/components/VincularUsuarioDialog";
 import { fetchVendasPorCorretor } from "@/lib/vendas";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Mail } from "lucide-react";
 
+const semAcento = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+
 export default function Corretores() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const [busca, setBusca] = useState("");
 
 
 
@@ -27,6 +32,10 @@ export default function Corretores() {
       return data || [];
     },
   });
+
+  const corretoresFiltrados = corretores.filter(
+    (c: any) => !busca.trim() || semAcento(c.nome || "").includes(semAcento(busca.trim()))
+  );
 
   const { can } = useUserRole();
   const podeEditar = can("corretores.gerenciar");
@@ -76,7 +85,16 @@ export default function Corretores() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-end">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="relative w-full max-w-xs">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+            placeholder="Buscar corretor pelo nome..."
+            className="pl-9"
+          />
+        </div>
         <div className="flex gap-2">
           <NovoCorretorDialog />
           <VincularUsuarioDialog />
@@ -103,7 +121,7 @@ export default function Corretores() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {corretores.map((c: any) => {
+              {corretoresFiltrados.map((c: any) => {
                 const cv = vendas.filter(v => v.corretor_id === c.id && v.status !== "distrato");
                 const vgv = cv.reduce((s, v) => s + Number(v.valor), 0);
                 const acesso = statusAcesso(c);
@@ -139,8 +157,10 @@ export default function Corretores() {
                   </TableRow>
                 );
               })}
-              {corretores.length === 0 && (
-                <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">Nenhum corretor cadastrado</TableCell></TableRow>
+              {corretoresFiltrados.length === 0 && (
+                <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                  {busca.trim() ? "Nenhum corretor encontrado" : "Nenhum corretor cadastrado"}
+                </TableCell></TableRow>
               )}
             </TableBody>
           </Table>
