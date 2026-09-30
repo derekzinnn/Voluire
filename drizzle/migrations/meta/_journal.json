@@ -113,6 +113,20 @@
       "when": 1790522420713,
       "tag": "0015_fase6_imoveis_prontos",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1790784908500,
+      "tag": "0016_baseline_tabelas_nao_versionadas",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1790784962547,
+      "tag": "0017_salvar_venda_atomico",
+      "breakpoints": true
     }
   ]
 }

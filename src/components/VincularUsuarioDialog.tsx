@@ -163,21 +163,6 @@ export default function VincularUsuarioDialog({ triggerLabel = "Vincular usuári
               </Button>
             </div>
 
-            <div className="space-y-2 rounded-lg border p-4">
-              <p className="text-sm font-medium">Senha temporária (opcional)</p>
-              <p className="text-sm text-muted-foreground">
-                Use só se a pessoa não tiver acesso ao e-mail agora.
-              </p>
-              <div className="mt-2 space-y-1 rounded border bg-muted/50 p-3 font-mono text-sm">
-                <p><span className="text-muted-foreground">Email:</span> {resultado.email}</p>
-                <p><span className="text-muted-foreground">Senha:</span> {resultado.password}</p>
-              </div>
-              <Button variant="outline" className="mt-2 w-full" onClick={copiar}>
-                {copiado ? <Check className="mr-2 h-4 w-4" /> : <Copy className="mr-2 h-4 w-4" />}
-                {copiado ? "Copiado!" : "Copiar credenciais"}
-              </Button>
-            </div>
-
             <Button className="w-full" variant="secondary" onClick={() => { reset(); setOpen(false); }}>Fechar</Button>
           </div>
         ) : (

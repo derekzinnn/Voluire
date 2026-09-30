@@ -177,7 +177,7 @@ const emptyForm = (): FormState => ({
 export default function Vendas() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const { can } = useUserRole();
+  const { can, isDiretor } = useUserRole();
   const isGestor = can("vendas.gerenciar");
   const [open, setOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
@@ -374,30 +374,15 @@ export default function Vendas() {
         observacao: form.observacao || null,
       };
 
-      let vendaId = editId;
-      if (editId) {
-        const { error } = await supabase.from("vendas").update(payload).eq("id", editId);
-        if (error) throw error;
-        await supabase.from("venda_corretores").delete().eq("venda_id", editId);
-      } else {
-        const { data, error } = await supabase.from("vendas").insert([payload]).select("id").single();
-        if (error) throw error;
-        vendaId = data.id;
-      }
-
       const pct = pctFicha;
       const part1 = participacaoDe(form.corretor1_id);
       const part2 = form.corretor2_id !== NONE ? participacaoDe(form.corretor2_id) : 0;
       const rows = [
-        { venda_id: vendaId!, corretor_id: form.corretor1_id, participacao_percentual: part1, percentual_corretor: pct(form.corretor1_id) },
+        { corretor_id: form.corretor1_id, participacao_percentual: part1, percentual_corretor: pct(form.corretor1_id) },
       ];
       if (form.corretor2_id !== NONE)
-        rows.push({ venda_id: vendaId!, corretor_id: form.corretor2_id, participacao_percentual: part2, percentual_corretor: pct(form.corretor2_id) });
-      const { error: vcErr } = await supabase.from("venda_corretores").insert(rows);
-      if (vcErr) throw vcErr;
+        rows.push({ corretor_id: form.corretor2_id, participacao_percentual: part2, percentual_corretor: pct(form.corretor2_id) });
 
-      // Parcelas: recriadas conforme a forma de pagamento
-      await supabase.from("venda_parcelas").delete().eq("venda_id", vendaId!);
       const cronograma: ParcelaEdit[] =
         form.forma_pagamento === "a_vista"
           ? [{ valor: form.valor, data_prevista: form.primeira_parcela, data_recebimento: form.data_pagamento }]
@@ -405,17 +390,21 @@ export default function Vendas() {
             ? parcelasEdit
             : gerarParcelas(Number(form.qtd_parcelas), form.primeira_parcela, Number(form.valor));
       if (cronograma.some((p) => !p.data_prevista)) throw new Error("Informe a data prevista de todas as parcelas.");
-      const parcelasRows = cronograma.map((p, i) => ({
-        venda_id: vendaId!,
-        numero: i + 1,
+      const parcelasRows = cronograma.map((p) => ({
         valor: Number(p.valor) || 0,
         data_prevista: p.data_prevista,
         tipo: form.forma_pagamento,
-        status: p.data_recebimento ? "recebida" : "prevista",
         data_recebimento: p.data_recebimento || null,
       }));
-      const { error: pErr } = await supabase.from("venda_parcelas").insert(parcelasRows);
-      if (pErr) throw pErr;
+
+      // Uma única transação no banco: venda + corretores + parcelas (tudo ou nada).
+      const { error } = await supabase.rpc("salvar_venda", {
+        p_id: editId ?? null,
+        p_venda: payload,
+        p_corretores: rows,
+        p_parcelas: parcelasRows,
+      } as any);
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["vendas"] });
@@ -1063,9 +1052,11 @@ export default function Vendas() {
                     {isGestor && (
                       <>
                         <Button variant="ghost" size="icon" onClick={() => abrirEdicao(v)}><Pencil className="h-4 w-4" /></Button>
-                        <Button variant="ghost" size="icon" onClick={() => setVendaParaExcluir(v.id)}>
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
+                        {isDiretor && (
+                          <Button variant="ghost" size="icon" onClick={() => setVendaParaExcluir(v.id)}>
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        )}
                       </>
                     )}
                   </TableCell>
