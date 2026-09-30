@@ -917,19 +917,12 @@ export default function Vendas() {
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2 sm:col-span-2">
                 <Label>Corretor responsável *</Label>
-                <div className="flex gap-2">
-                  <Select value={form.corretor1_id} onValueChange={(v) => set("corretor1_id", v)}>
-                    <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                    <SelectContent className="max-h-60">
-                      {corretores.map((c) => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                  {form.corretor1_id && (
-                    <div className="flex w-28 items-center justify-center rounded-md border bg-muted px-2 text-sm">
-                      {fmtPct(participacaoDe(form.corretor1_id))}%
-                    </div>
-                  )}
-                </div>
+                <Select value={form.corretor1_id} onValueChange={(v) => set("corretor1_id", v)}>
+                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                  <SelectContent className="max-h-60">
+                    {corretores.map((c) => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2 sm:col-span-2">
                 <Label>Houve outro corretor na venda?</Label>
@@ -950,19 +943,12 @@ export default function Vendas() {
               {(form.corretor2_id !== NONE || temOutroCorretor) && (
                 <div className="space-y-2 sm:col-span-2">
                   <Label>Qual outro corretor? *</Label>
-                  <div className="flex gap-2">
-                    <Select value={form.corretor2_id} onValueChange={(v) => { set("corretor2_id", v); if (isPronto && v !== NONE && Number(form.corretor2_part) === 0) { set("corretor1_part", "50"); set("corretor2_part", "50"); } }}>
-                      <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                      <SelectContent className="max-h-60">
-                        {corretores.filter((c) => c.id !== form.corretor1_id).map((c) => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                    {form.corretor2_id !== NONE && (
-                      <div className="flex w-28 items-center justify-center rounded-md border bg-muted px-2 text-sm">
-                        {fmtPct(participacaoDe(form.corretor2_id))}%
-                      </div>
-                    )}
-                  </div>
+                  <Select value={form.corretor2_id} onValueChange={(v) => { set("corretor2_id", v); if (isPronto && v !== NONE && Number(form.corretor2_part) === 0) { set("corretor1_part", "50"); set("corretor2_part", "50"); } }}>
+                    <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                    <SelectContent className="max-h-60">
+                      {corretores.filter((c) => c.id !== form.corretor1_id).map((c) => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
                 </div>
               )}
               {isPronto ? (
