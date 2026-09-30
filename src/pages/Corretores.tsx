@@ -5,14 +5,17 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { formatCurrency, formatPercent } from "@/lib/format";
-import { Trash2, IdCard } from "lucide-react";
+import { Trash2, IdCard, Search } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import NovoCorretorDialog from "@/components/NovoCorretorDialog";
 import VincularUsuarioDialog from "@/components/VincularUsuarioDialog";
 import { fetchVendasPorCorretor } from "@/lib/vendas";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Mail } from "lucide-react";
+
+const semAcento = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
 export default function Corretores() {
   const queryClient = useQueryClient();
